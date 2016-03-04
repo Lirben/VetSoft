@@ -1,0 +1,11 @@
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\bin\Debug\VetSoft.exe.config
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\bin\Debug\VetSoft.exe
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\bin\Debug\VetSoft.pdb
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.csprojResolveAssemblyReference.cache
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.frmMain.resources
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.Properties.Resources.resources
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.csproj.GenerateResource.Cache
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.exe
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\obj\Debug\VetSoft.pdb
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\bin\Debug\Newtonsoft.Json.dll
+C:\Data\Users\waerenbl\Documents\2. Personal\Equine\VetSoft\VetSoft\bin\Debug\Newtonsoft.Json.xml
