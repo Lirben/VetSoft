@@ -5,8 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 ///TODO:
-///     1: Const Sample period must come from the hoof!
-///     2: Provide zero point calibration between steps!
+///     1: Zero point calibration between steps!
 
 namespace VetSoft
 {
@@ -21,6 +20,7 @@ namespace VetSoft
         public List<ForcePoint> SOURCELIST { get { return _sourceList; } }
         public List<ForcePoint> FINALLIST { get { return _finalList; } }
 
+        
         public int Steps { get { return CalculateSteps(); } }
         
 
@@ -58,6 +58,10 @@ namespace VetSoft
             _finalList = _stepSequence;
         }
 
+        /// <summary>
+        /// Calculate the steps from a filtered input stream of forcepoints
+        /// </summary>
+        /// <returns>The amount of steps</returns>
         private int CalculateSteps()
         {
             int retVal = 0;
@@ -140,12 +144,13 @@ namespace VetSoft
         private List<ForcePoint> Integrate(List<ForcePoint> inputList)
         {
             double sum = 0.0;
+            double samplePeriod = CalculateSamplePeriod(inputList);
             List<ForcePoint> retVal = new List<ForcePoint>();
             ForcePoint previousValue = inputList[0];
 
             foreach(ForcePoint forcePoint in inputList)
             {                       //Take the time difference into account in case if some samples are missing
-                sum += (forcePoint.ForceValue * ((forcePoint.TimeStamp - previousValue.TimeStamp) / 50));   ///TODO: Const Sample period must come from the hoof!
+                sum += (forcePoint.ForceValue * ((forcePoint.TimeStamp - previousValue.TimeStamp) / samplePeriod));
                 retVal.Add(new ForcePoint(forcePoint.TimeStamp, sum));
                 previousValue = forcePoint;
             }
@@ -160,7 +165,7 @@ namespace VetSoft
         /// <returns>The list of Forcepoints with an offset</returns>
         private List<ForcePoint> CompensateInitialWaitSequence(List<ForcePoint> inputList)
         {
-            double minForcePoint = 0.0;
+            double minForcePoint = double.PositiveInfinity;
             List<ForcePoint> retVal = new List<ForcePoint>();
 
             foreach(ForcePoint forcePoint in inputList)
@@ -181,10 +186,31 @@ namespace VetSoft
             _stepSequence = new List<ForcePoint>();
 
             foreach (ForcePoint forcePoint in inputList)
+            {
                 if (forcePoint.ForceValue > 250.0)
                     _stepSequence.Add(new ForcePoint(forcePoint.TimeStamp, 500.0));
                 else
                     _stepSequence.Add(new ForcePoint(forcePoint.TimeStamp, 0.0));
+            }
+        }
+
+        /// <summary>
+        /// Calucate the sample period from a list of forcepoints
+        /// </summary>
+        /// <param name="inputList">The list of forcepoints to calculate the sample period of</param>
+        /// <returns>The sample period. If infinite, no valid sample period could be determined</returns>
+        private double CalculateSamplePeriod(List<ForcePoint> inputList)
+        {
+            double retVal = double.PositiveInfinity;
+            ForcePoint previousVal = inputList[inputList.Count - 1];
+
+            foreach (ForcePoint forcePoint in inputList)
+            {
+                retVal = Math.Min(retVal, (forcePoint.TimeStamp - previousVal.TimeStamp));
+                previousVal = forcePoint;
+            }
+
+            return retVal;
         }
     }
 }

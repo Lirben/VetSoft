@@ -210,7 +210,7 @@ namespace VetSoft
                     chFR.Series["TopRight"].Points.AddXY(value.TimeStamp, value.ForceValue);
                 };
 
-                chFL.BeginInvoke(graphAction);
+                chFR.BeginInvoke(graphAction);
             }
 
             writeLine(_equine.Steps + " steps analysed");
