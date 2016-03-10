@@ -201,49 +201,40 @@ namespace VetSoft
 
             List<ForcePointStream> output = _equine.FINALLIST;
 
-            MethodInvoker graphAction;
-            
-            foreach (ForcePoint forcePoint in output[1].StepStream)
+            foreach (ForcePointStream fpStream in output)
             {
+                string series = "";
+                MethodInvoker graphAction;
+
+                writeLine(fpStream.HoofLocation + "." + fpStream.SensorLocation + ": " + fpStream.Steps);
+                              
+                switch (fpStream.SensorLocation)
+                {
+                    case Types.SensorLocation.REAR_LEFT:
+                        series = "RearLeftStep";
+                        break;
+
+                    case Types.SensorLocation.REAR_RIGHT:
+                        series = "RearRightStep";
+                        break;
+
+                    case Types.SensorLocation.TOP_LEFT:
+                        series = "TopLeftStep";
+                        break;
+
+                    case Types.SensorLocation.TOP_RIGHT:
+                        series = "TopRightStep";
+                        break;
+                }
+
                 graphAction = delegate
                 {
-                    chFR.Series["TopLeftStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);                        
+                    foreach(ForcePoint forcePoint in fpStream.StepStream)
+                        chFR.Series[series].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
                 };
 
                 chFR.BeginInvoke(graphAction);
             }
-
-            foreach (ForcePoint forcePoint in output[3].StepStream)
-            {
-                graphAction = delegate
-                {
-                    chFR.Series["TopRightStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
-                };
-
-                chFR.BeginInvoke(graphAction);
-            }
-
-            foreach (ForcePoint forcePoint in output[0].StepStream)
-            {
-                graphAction = delegate
-                {
-                    chFR.Series["RearLeftStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
-                };
-
-                chFR.BeginInvoke(graphAction);
-            }
-
-            foreach (ForcePoint forcePoint in output[2].StepStream)
-            {
-                graphAction = delegate
-                {
-                    chFR.Series["RearRightStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
-                };
-
-                chFR.BeginInvoke(graphAction);
-            }               
-            
-            //writeLine(_equine.Steps + " steps analysed");
         }
 
         private void btnSave_Click(object sender, EventArgs e)

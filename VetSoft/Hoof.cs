@@ -5,9 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-///TODO:
-///     Check if the hoofname is valid
-
 namespace VetSoft
 {
     class Hoof

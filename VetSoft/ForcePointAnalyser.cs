@@ -13,7 +13,7 @@ namespace VetSoft
         {
             ForcePointStream retVal = null;
 
-            if(forcePointStream.StreamType.Equals(Types.StreamType.RAW))
+            if (forcePointStream.StreamType.Equals(Types.StreamType.RAW))
             {
                 retVal = SignalSquare(forcePointStream);
                 retVal = LPFilter(retVal, 3);
@@ -107,12 +107,12 @@ namespace VetSoft
         /// <returns>The list of Forcepoints with an offset</returns>
         private ForcePointStream CompensateInitialWaitSequence(ForcePointStream forcePointStream)
         {
-            double minForcePoint = double.PositiveInfinity;
+            double minForcePoint = forcePointStream.RawStream.Min(x => x.ForceValue);
             ForcePointStream retVal = new ForcePointStream(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.FILTERED);
 
             foreach (ForcePoint forcePoint in forcePointStream.RawStream)
             {
-                minForcePoint = Math.Min(minForcePoint, forcePoint.ForceValue);
+                //minForcePoint = Math.Min(minForcePoint, forcePoint.ForceValue);
                 retVal.addForcePoint(new ForcePoint(forcePoint.TimeStamp, forcePoint.ForceValue + Math.Abs(minForcePoint)));
             }
 
@@ -125,11 +125,12 @@ namespace VetSoft
         /// <param name="inputList">The ist of filtered force values from which the steps can be calculated</param>
         private ForcePointStream calculateStepSequence(ForcePointStream forcePointStream)
         {
+            double treshHold = (GetAmplitude(forcePointStream) * 0.075);
             ForcePointStream retVal = new ForcePointStream(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.STEP);
 
             foreach (ForcePoint forcePoint in forcePointStream.RawStream)
             {
-                if (forcePoint.ForceValue > 50.0)
+                if (forcePoint.ForceValue > treshHold)
                     retVal.addForcePoint(new ForcePoint(forcePoint.TimeStamp, 500.0));
                 else
                     retVal.addForcePoint(new ForcePoint(forcePoint.TimeStamp, 0.0));
@@ -154,6 +155,11 @@ namespace VetSoft
             }
 
             return retVal;
+        }
+
+        private double GetAmplitude(ForcePointStream forcePointStream)
+        {
+            return forcePointStream.RawStream.Max(x => x.ForceValue);
         }
     }
 }

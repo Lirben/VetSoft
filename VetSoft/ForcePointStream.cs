@@ -8,18 +8,21 @@ namespace VetSoft
 {
     class ForcePointStream
     {
+        private int _steps;
         private ForcePointAnalyser _fpAnalyser;
         private Types.StreamType _streamType;
         private Types.HoofLocation _hoofLocation;
         private Types.SensorLocation _sensorLocation;
         private List<ForcePoint> _rawStream;
+        private List<ForcePoint> _stepStream;
 
-        public int Steps { get { return CalculateSteps(); } }
+
+        public int Steps { get { return ReturnSteps(); } }
         public Types.StreamType StreamType { get { return _streamType; } }
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
         public Types.SensorLocation SensorLocation { get { return _sensorLocation; } }
         public List<ForcePoint> RawStream { get { return _rawStream; } }
-        public List<ForcePoint> StepStream { get { return CalculateStepStream(); } }
+        public List<ForcePoint> StepStream { get { return ReturnStepStream(); } }
 
 
         /// <summary>
@@ -29,11 +32,12 @@ namespace VetSoft
         /// <param name="sensorLocation">The sensor on the hoof whereto the stream belongs</param>
         public ForcePointStream(Types.HoofLocation hoofLocation, Types.SensorLocation sensorLocation, Types.StreamType streamType = Types.StreamType.RAW)
         {
+            _steps = -1;
             _streamType = streamType;
             _hoofLocation = hoofLocation;
             _sensorLocation = sensorLocation;
-
-            _rawStream = new List<ForcePoint>();
+            _rawStream = new List<ForcePoint>();  
+            _stepStream = new List<ForcePoint>();
         }
         
 
@@ -46,37 +50,49 @@ namespace VetSoft
             _rawStream.Add(forcePoint);
         }
 
-        private List<ForcePoint> CalculateStepStream()
+        private int ReturnSteps()
         {
-            List<ForcePoint> retVal = new List<ForcePoint>();
+            if (_steps.Equals(-1))
+                CalculateSteps();
 
+            return _steps;
+        }
+
+        private List<ForcePoint> ReturnStepStream()
+        {
+            if (_stepStream.Count.Equals(0))
+                CalculateStepStream();
+
+            return _stepStream;
+        }
+
+        private void CalculateStepStream()
+        {
             _fpAnalyser = new ForcePointAnalyser();
-            retVal = _fpAnalyser.StepSequence(this).RawStream;
-
-            return retVal;
+            _stepStream = _fpAnalyser.StepSequence(this).RawStream;
         }
 
         /// <summary>
         /// Calculate the steps from a filtered input stream of forcepoints
         /// </summary>
         /// <returns>The amount of steps</returns>
-        private int CalculateSteps()
+        private void CalculateSteps()
         {
-            int retVal = 0;
+            _steps = 0;
+            ForcePoint previousPoint;
 
-            List<ForcePoint> stepStream = CalculateStepStream();
+            if(_stepStream.Count.Equals(0))
+                CalculateStepStream();
 
-            ForcePoint previousPoint = stepStream[0];
+            previousPoint = _stepStream[0];
 
-            foreach (ForcePoint forcePoint in stepStream)
+            foreach (ForcePoint forcePoint in _stepStream)
             {
                 if (forcePoint.ForceValue > previousPoint.ForceValue)
-                    retVal++;
+                    _steps++;
 
                 previousPoint = forcePoint;
             }
-
-            return retVal;
         }       
     }
 }
