@@ -12,11 +12,10 @@ namespace VetSoft
         public const int RESPONSE_PACKAGE_TYPE = 1;
         public const int DATA_PACKAGE_TYPE = 2;
 
-        public const string FRONT_LEFT = "FL";
-        public const string FRONT_RIGHT = "FR";
-        public const string HIND_LEFT = "HL";
-        public const string HIND_RIGHT = "HR";
-
+        public enum StreamType { RAW, FILTERED, STEP };
+        public enum HoofLocation { FRONT_LEFT, FRONT_RIGHT, HIND_LEFT, HIND_RIGHT};
+        public enum SensorLocation { TOP_LEFT, TOP_RIGHT, REAR_LEFT, REAR_RIGHT };
+        
         public static string RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

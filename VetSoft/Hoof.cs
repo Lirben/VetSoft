@@ -12,25 +12,30 @@ namespace VetSoft
 {
     class Hoof
     {
-        public string Name { get {return _name; } }
         public bool Present { get { return _present; } }
         public List<Sample> SampleList { get { return _sampleList; } }
+        public Types.HoofLocation HoofLocation { get {return _hoofLocation; } }
+        public List<ForcePointStream> ForcePointStreams { get { return _forcePointStream; } }
         
-        private string _name;
-        private bool _present;
+        private Types.HoofLocation _hoofLocation;
         private List<Sample> _sampleList;
+        private List<ForcePointStream> _forcePointStream;
+        private bool _present;
+
 
         /// <summary>
         /// Constructor of the hoof class
         /// </summary>
         /// <param name="name">The name of the hoof</param>
-        public Hoof(string name)
-        {
-            ///TODO: check if the name of the hoof is valid
-            
-            _name = name;
+        public Hoof(Types.HoofLocation hoofLocation)
+        {           
+            _hoofLocation = hoofLocation;
             _present = false;
             _sampleList = new List<Sample>();
+            _forcePointStream = new List<ForcePointStream>(4);
+
+            for (int i = 0; i < 4; i++)
+                _forcePointStream.Add(new ForcePointStream(hoofLocation, (Types.SensorLocation)i));
         }
 
         /// <summary>
@@ -48,11 +53,16 @@ namespace VetSoft
         /// <returns>Returns false if the hoof is not present. True if everything is ok</returns>
         public bool addSample(Sample sample)
         {
-            if (Present)
-            {
+            if(Present)
+            { 
+                foreach (ForcePointStream fpStream in _forcePointStream)
+                    fpStream.addForcePoint(new ForcePoint(sample.Time, sample.Data[(int) fpStream.SensorLocation]));
+
                 _sampleList.Add(sample);
+
                 return true;
             }
+
             return false;
         }
     }

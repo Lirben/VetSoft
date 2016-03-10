@@ -49,10 +49,10 @@ namespace VetSoft
 
             //Hoofs setup
             _hoofList = new List<Hoof>(4);
-            _hoofList.Add(new Hoof(Types.FRONT_LEFT));
-            _hoofList.Add(new Hoof(Types.FRONT_RIGHT));
-            _hoofList.Add(new Hoof(Types.HIND_LEFT));
-            _hoofList.Add(new Hoof(Types.HIND_RIGHT));
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_LEFT));
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_RIGHT));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_LEFT));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_RIGHT));
 
             //Charts setup
             setupCharts();          
@@ -182,11 +182,11 @@ namespace VetSoft
             {
                 clearGraphs();
 
-                foreach (Hoof hoof in _hoofList)
+                /*foreach (Hoof hoof in _hoofList)
                 {
                     hoof.setPresent(false);
-                    hoof.SampleList.Clear();
-                }
+                    hoof.ForcePointStreams.Clear();
+                }*/
 
                 loadFile(selectedValue.Split('●')[1].TrimStart(' '));
             }
@@ -199,30 +199,58 @@ namespace VetSoft
             _equine = new Equine(_hoofList);
             _equine.process();
 
-            List<ForcePoint> output = _equine.FINALLIST;
+            List<ForcePointStream> output = _equine.FINALLIST;
 
             MethodInvoker graphAction;
-
-            foreach (ForcePoint value in output)
+            
+            foreach (ForcePoint forcePoint in output[1].StepStream)
             {
                 graphAction = delegate
                 {
-                    chFR.Series["TopRight"].Points.AddXY(value.TimeStamp, value.ForceValue);
+                    chFR.Series["TopLeftStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);                        
                 };
 
                 chFR.BeginInvoke(graphAction);
             }
 
-            writeLine(_equine.Steps + " steps analysed");
-          
+            foreach (ForcePoint forcePoint in output[3].StepStream)
+            {
+                graphAction = delegate
+                {
+                    chFR.Series["TopRightStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
+                };
 
+                chFR.BeginInvoke(graphAction);
+            }
+
+            foreach (ForcePoint forcePoint in output[0].StepStream)
+            {
+                graphAction = delegate
+                {
+                    chFR.Series["RearLeftStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
+                };
+
+                chFR.BeginInvoke(graphAction);
+            }
+
+            foreach (ForcePoint forcePoint in output[2].StepStream)
+            {
+                graphAction = delegate
+                {
+                    chFR.Series["RearRightStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
+                };
+
+                chFR.BeginInvoke(graphAction);
+            }               
+            
+            //writeLine(_equine.Steps + " steps analysed");
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
             foreach (Hoof hoof in _hoofList)
                 foreach (Sample sample in hoof.SampleList)
-                    _dataLogger.WriteSample(sample, hoof.Name);
+                    _dataLogger.WriteSample(sample, hoof.HoofLocation);
 
             _dataLogger.SaveToFile(Types.RandomString(6) + ".xml");
         }
@@ -235,11 +263,11 @@ namespace VetSoft
 
             chFR.ChartAreas[0].AxisX.Maximum = chFR.ChartAreas[0].AxisX.Minimum + (interval * 1000);
             chFL.ChartAreas[0].AxisX.Maximum = chFL.ChartAreas[0].AxisX.Minimum + (interval * 1000);
-            chSteps.ChartAreas[0].AxisX.Maximum = chSteps.ChartAreas[0].AxisX.Minimum + (interval * 1000);
+            //chSteps.ChartAreas[0].AxisX.Maximum = chSteps.ChartAreas[0].AxisX.Minimum + (interval * 1000);
 
             chFR.Update();
             chFL.Update();
-            chSteps.Update();
+            //chSteps.Update();
 
         }
 
@@ -251,11 +279,11 @@ namespace VetSoft
                 chFR.ChartAreas[0].AxisX.Maximum -= 1000;
                 chFL.ChartAreas[0].AxisX.Minimum -= 1000;
                 chFL.ChartAreas[0].AxisX.Maximum -= 1000;
-                chSteps.ChartAreas[0].AxisX.Minimum -= 1000;
-                chSteps.ChartAreas[0].AxisX.Maximum -= 1000;
+                /*chSteps.ChartAreas[0].AxisX.Minimum -= 1000;
+                chSteps.ChartAreas[0].AxisX.Maximum -= 1000;*/
                 chFR.Update();
                 chFL.Update();
-                chSteps.Update();
+                //chSteps.Update();
             }
         }
 
@@ -266,13 +294,13 @@ namespace VetSoft
             chFR.ChartAreas[0].AxisX.Maximum += 1000;
             chFL.ChartAreas[0].AxisX.Minimum += 1000;
             chFL.ChartAreas[0].AxisX.Maximum += 1000;
-            chSteps.ChartAreas[0].AxisX.Minimum += 1000;
-            chSteps.ChartAreas[0].AxisX.Maximum += 1000;
+            /*chSteps.ChartAreas[0].AxisX.Minimum += 1000;
+            chSteps.ChartAreas[0].AxisX.Maximum += 1000;*/
 
             chFL.ChartAreas[0].AxisY.Maximum = double.NaN;
             chFR.Update();
             chFL.Update();
-            chSteps.Update();
+            //chSteps.Update();
         }
 
         /// <summary>
@@ -319,7 +347,7 @@ namespace VetSoft
         private void processDataPacket(string data)
         {
             Types.DataPackage dataPackage = JsonConvert.DeserializeObject<Types.DataPackage>(data);
-            _hoofList.Find(x => x.Name.Equals(dataPackage.hoof)).addSample(new Sample(dataPackage.time, dataPackage.data));
+            _hoofList.Find(x => x.HoofLocation.Equals(dataPackage.hoof)).addSample(new Sample(dataPackage.time, dataPackage.data));
 
             renderCharts();
 
@@ -338,13 +366,13 @@ namespace VetSoft
             foreach (Hoof hoof in _hoofList.Where(x => x.Present))
                 foreach (Sample sample in hoof.SampleList)
                 {
-                    switch (hoof.Name)
+                    switch (hoof.HoofLocation)
                     {
-                        case Types.FRONT_LEFT:
+                        case Types.HoofLocation.FRONT_LEFT:
                             graphAction = delegate
                             {
-                                chFL.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
-                                /*chFL.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
+                                /*chFL.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
+                                chFL.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
                                 chFL.Series["RearLeft"].Points.AddXY(sample.Time, sample.Data[0]);
                                 chFL.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);*/
                             };
@@ -352,13 +380,13 @@ namespace VetSoft
                             chFL.BeginInvoke(graphAction);
                             break;
 
-                        case Types.FRONT_RIGHT:
+                        case Types.HoofLocation.FRONT_RIGHT:
                             graphAction = delegate
                             {
                                 chFR.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
-                                /*chFR.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
+                                chFR.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
                                 chFR.Series["RearLeft"].Points.AddXY(sample.Time, sample.Data[0]);
-                                chFR.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);*/                               
+                                chFR.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);                           
                             };
 
                             chFR.BeginInvoke(graphAction);
@@ -406,7 +434,7 @@ namespace VetSoft
             Hoof hoof;
             int activeHoofs;
 
-            hoof = _hoofList.Find(x => x.Name.Equals(hoofName));
+            hoof = _hoofList.Find(x => x.HoofLocation.Equals(hoofName));
 
             if (!hoof.Present)
             {
@@ -442,13 +470,13 @@ namespace VetSoft
 
                 if (xmlElement.SelectSingleNode("Hoof") != null)
                 {
-                    _hoofList.Find(x => x.Name.Equals(xmlElement.SelectSingleNode("Hoof").InnerXml)).setPresent();
-                    _hoofList.Find(x => x.Name.Equals(xmlElement.SelectSingleNode("Hoof").InnerXml)).addSample(new Sample(time, data));
+                    _hoofList.Find(x => x.HoofLocation.Equals(xmlElement.SelectSingleNode("Hoof").InnerXml)).setPresent();
+                    _hoofList.Find(x => x.HoofLocation.Equals(xmlElement.SelectSingleNode("Hoof").InnerXml)).addSample(new Sample(time, data));
                 }
                 else
                 {
-                    _hoofList.Find(x => x.Name.Equals(Types.FRONT_RIGHT)).setPresent();
-                    _hoofList.Find(x => x.Name.Equals(Types.FRONT_RIGHT)).addSample(new Sample(time, data));
+                    _hoofList.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)).setPresent();
+                    _hoofList.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)).addSample(new Sample(time, data));
                 }                
             }          
         }
@@ -461,8 +489,8 @@ namespace VetSoft
             for (int i = 0; i < chFL.Series.Count; i++)
                 chFL.Series[i].Points.Clear();
 
-            for (int i = 0; i < chSteps.Series.Count; i++)
-                chSteps.Series[i].Points.Clear();
+            /*for (int i = 0; i < chSteps.Series.Count; i++)
+                chSteps.Series[i].Points.Clear();*/
         }
 
         private void writeLine(string line)
@@ -473,47 +501,17 @@ namespace VetSoft
 
         private void setupCharts()
         {
-            chFL.Series.Add("TopLeft");
-            chFL.Series.Add("TopRight");
-            chFL.Series.Add("RearLeft");
-            chFL.Series.Add("RearRight");
-
-            for (int i = 0; i < chFL.Series.Count; i++)
-            {
-                chFL.Series[i].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
-                chFL.Series[i].BorderWidth = 4;
-            }
-
-            chFL.Series["TopLeft"].Color = Color.LightSteelBlue;
-            chFL.Series["TopRight"].Color = Color.White;
-            chFL.Series["RearLeft"].Color = Color.Orange;
-            chFL.Series["RearRight"].Color = Color.Gray;
-
-            chFL.ChartAreas[0].AxisX.LineColor = Color.White;
-            chFL.ChartAreas[0].AxisY.LineColor = Color.White;
-            chFL.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.Transparent;
-            chFL.ChartAreas[0].AxisX.MinorGrid.LineColor = Color.Transparent;
-            chFL.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.Transparent;
-            chFL.ChartAreas[0].AxisY.MinorGrid.LineColor = Color.Transparent;
-            chFL.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chFL.ChartAreas[0].AxisY.LabelStyle.ForeColor = Color.White;
-
-            /*****************************************************************************************************************/
             chFR.Series.Add("TopLeft");
+            chFR.Series.Add("TopLeftStep");
+
             chFR.Series.Add("TopRight");
+            chFR.Series.Add("TopRightStep");
+
             chFR.Series.Add("RearLeft");
+            chFR.Series.Add("RearLeftStep");
+
             chFR.Series.Add("RearRight");
-
-            chFR.Series.Add("Steps");
-            chSteps.Series.Add("Filter");
-
-            chFR.Series["TopLeft"].Color = Color.LightSteelBlue;
-            chFR.Series["TopRight"].Color = Color.White;
-            chFR.Series["RearLeft"].Color = Color.Orange;
-            chFR.Series["RearRight"].Color = Color.Gray;
-                        
-            chFR.Series["Steps"].Color = Color.White;
-            chSteps.Series["Filter"].Color = Color.White;
+            chFR.Series.Add("RearRightStep");
 
             for (int i = 0; i < chFR.Series.Count; i++)
             {
@@ -521,9 +519,17 @@ namespace VetSoft
                 chFR.Series[i].BorderWidth = 4;
             }
 
-            chFR.Series["Steps"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
-            chSteps.Series["Filter"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
-            chSteps.Series["Filter"].BorderWidth = 4;
+            chFR.Series["TopLeft"].Color = Color.LightSteelBlue;
+            chFR.Series["TopLeftStep"].Color = Color.BlueViolet;
+
+            chFR.Series["TopRight"].Color = Color.White;
+            chFR.Series["TopRightStep"].Color = Color.NavajoWhite;
+
+            chFR.Series["RearLeft"].Color = Color.Orange;
+            chFR.Series["RearLeftStep"].Color = Color.OrangeRed;
+
+            chFR.Series["RearRight"].Color = Color.Gray;
+            chFR.Series["RearRightStep"].Color = Color.YellowGreen;
 
             chFR.ChartAreas[0].AxisX.LineColor = Color.White;
             chFR.ChartAreas[0].AxisY.LineColor = Color.White;
@@ -533,6 +539,91 @@ namespace VetSoft
             chFR.ChartAreas[0].AxisY.MinorGrid.LineColor = Color.Transparent;
             chFR.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
             chFR.ChartAreas[0].AxisY.LabelStyle.ForeColor = Color.White;
+
+            /*****************************************************************************************************************/
+            chFL.Series.Add("TopLeft");
+            chFL.Series.Add("TopRight");
+            chFL.Series.Add("RearLeft");
+            chFL.Series.Add("RearRight");
+
+            chFL.Series.Add("Steps");
+            //chSteps.Series.Add("Filter");
+
+            chFL.Series["TopLeft"].Color = Color.LightSteelBlue;
+            chFL.Series["TopRight"].Color = Color.White;
+            chFL.Series["RearLeft"].Color = Color.Orange;
+            chFL.Series["RearRight"].Color = Color.Gray;
+
+            chFL.Series["Steps"].Color = Color.White;
+            //chSteps.Series["Filter"].Color = Color.Azure;
+
+            for (int i = 0; i < chFL.Series.Count; i++)
+            {
+                chFL.Series[i].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chFL.Series[i].BorderWidth = 4;
+            }
+
+            chFL.Series["Steps"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
+            /*chSteps.Series["Filter"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chSteps.Series["Filter"].BorderWidth = 4;*/
+
+            chFL.ChartAreas[0].AxisX.LineColor = Color.White;
+            chFL.ChartAreas[0].AxisY.LineColor = Color.White;
+            chFL.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.Transparent;
+            chFL.ChartAreas[0].AxisX.MinorGrid.LineColor = Color.Transparent;
+            chFL.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.Transparent;
+            chFL.ChartAreas[0].AxisY.MinorGrid.LineColor = Color.Transparent;
+            chFL.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+            chFL.ChartAreas[0].AxisY.LabelStyle.ForeColor = Color.White;
+        }
+
+        private void cbTopLeft_CheckedChanged(object sender, EventArgs e)
+        {
+
+            chFR.Series["TopLeft"].Color = Color.Transparent;
+            chFR.Series["TopLeftStep"].Color = Color.Transparent;
+
+            if (cbTopLeft.Checked)
+            {
+                chFR.Series["TopLeft"].Color = Color.LightSteelBlue;
+                chFR.Series["TopLeftStep"].Color = Color.BlueViolet;
+            }
+        }
+
+        private void cbRearLeft_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["RearLeft"].Color = Color.Transparent;
+            chFR.Series["RearLeftStep"].Color = Color.Transparent;
+
+            if (cbRearLeft.Checked)
+            {
+                chFR.Series["RearLeft"].Color = Color.Orange;
+                chFR.Series["RearLeftStep"].Color = Color.OrangeRed;
+            }
+        }
+
+        private void cbTopRight_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["TopRight"].Color = Color.Transparent;
+            chFR.Series["TopRightStep"].Color = Color.Transparent;
+
+            if (cbTopRight.Checked)
+            {
+                chFR.Series["TopRight"].Color = Color.White;
+                chFR.Series["TopRightStep"].Color = Color.NavajoWhite;
+            }
+        }
+
+        private void cbRearRight_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["RearRight"].Color = Color.Transparent;
+            chFR.Series["RearRightStep"].Color = Color.Transparent;
+
+            if (cbRearRight.Checked)
+            {
+                chFR.Series["RearRight"].Color = Color.Gray;
+                chFR.Series["RearRightStep"].Color = Color.GreenYellow;
+            }
         }
     }
 }

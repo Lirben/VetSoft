@@ -52,6 +52,8 @@
     <Compile Include="DataLogger.cs" />
     <Compile Include="Equine.cs" />
     <Compile Include="ForcePoint.cs" />
+    <Compile Include="ForcePointAnalyser.cs" />
+    <Compile Include="ForcePointStream.cs" />
     <Compile Include="Hoof.cs" />
     <Compile Include="Sample.cs" />
     <Compile Include="Types.cs" />

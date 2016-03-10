@@ -22,7 +22,7 @@ namespace VetSoft
 
         }
 
-        public void WriteSample(Sample sample, String hoof)
+        public void WriteSample(Sample sample, Types.HoofLocation hoof)
         {
             XmlElement sampleEl = _xmlDoc.CreateElement("Sample");
             XmlElement timeEl = _xmlDoc.CreateElement("Time");
@@ -33,7 +33,7 @@ namespace VetSoft
             XmlElement Data3El = _xmlDoc.CreateElement("TopRight");
 
             timeEl.InnerText = sample.Time.ToString();
-            hoofEl.InnerText = hoof;
+            hoofEl.InnerText = hoof.ToString();
             Data0El.InnerText = sample.Data[0].ToString();
             Data1El.InnerText = sample.Data[1].ToString();
             Data2El.InnerText = sample.Data[2].ToString();

@@ -32,8 +32,6 @@
             System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
             this.label1 = new System.Windows.Forms.Label();
             this.pnCloseConsole = new System.Windows.Forms.Panel();
@@ -44,21 +42,22 @@
             this.btnDisconnect = new System.Windows.Forms.Button();
             this.btnMeasure = new System.Windows.Forms.Button();
             this.btnIdle = new System.Windows.Forms.Button();
-            this.chSteps = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.btnLoadFile = new System.Windows.Forms.Button();
             this.pbNoConnect = new System.Windows.Forms.PictureBox();
             this.chFR = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.chFL = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.label3 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.btnSave = new System.Windows.Forms.Button();
             this.txtScale = new System.Windows.Forms.TextBox();
             this.lblScrollRight = new System.Windows.Forms.Label();
             this.lblScrollLeft = new System.Windows.Forms.Label();
+            this.cbTopLeft = new System.Windows.Forms.CheckBox();
+            this.cbTopRight = new System.Windows.Forms.CheckBox();
+            this.cbRearLeft = new System.Windows.Forms.CheckBox();
+            this.cbRearRight = new System.Windows.Forms.CheckBox();
             this.pnCloseConsole.SuspendLayout();
             this.pnOpenConsole.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chSteps)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbNoConnect)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chFR)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chFL)).BeginInit();
@@ -188,22 +187,6 @@
             this.btnIdle.Visible = false;
             this.btnIdle.Click += new System.EventHandler(this.btnIdle_Click);
             // 
-            // chSteps
-            // 
-            this.chSteps.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea1.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea1.Name = "ChartArea1";
-            this.chSteps.ChartAreas.Add(chartArea1);
-            legend1.BackColor = System.Drawing.Color.SteelBlue;
-            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend1.Name = "Legend1";
-            this.chSteps.Legends.Add(legend1);
-            this.chSteps.Location = new System.Drawing.Point(92, 1);
-            this.chSteps.Name = "chSteps";
-            this.chSteps.Size = new System.Drawing.Size(1086, 229);
-            this.chSteps.TabIndex = 11;
-            this.chSteps.Text = "Front Left";
-            // 
             // btnLoadFile
             // 
             this.btnLoadFile.FlatAppearance.BorderColor = System.Drawing.Color.White;
@@ -233,13 +216,13 @@
             // chFR
             // 
             this.chFR.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea2.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea2.Name = "ChartArea1";
-            this.chFR.ChartAreas.Add(chartArea2);
-            legend2.BackColor = System.Drawing.Color.SteelBlue;
-            legend2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend2.Name = "Legend1";
-            this.chFR.Legends.Add(legend2);
+            chartArea1.BackColor = System.Drawing.Color.SteelBlue;
+            chartArea1.Name = "ChartArea1";
+            this.chFR.ChartAreas.Add(chartArea1);
+            legend1.BackColor = System.Drawing.Color.SteelBlue;
+            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend1.Name = "Legend1";
+            this.chFR.Legends.Add(legend1);
             this.chFR.Location = new System.Drawing.Point(92, 370);
             this.chFR.Name = "chFR";
             this.chFR.Size = new System.Drawing.Size(1086, 229);
@@ -249,29 +232,18 @@
             // chFL
             // 
             this.chFL.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea3.BackColor = System.Drawing.Color.SteelBlue;
-            chartArea3.Name = "ChartArea1";
-            this.chFL.ChartAreas.Add(chartArea3);
-            legend3.BackColor = System.Drawing.Color.SteelBlue;
-            legend3.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend3.Name = "Legend1";
-            this.chFL.Legends.Add(legend3);
+            chartArea2.BackColor = System.Drawing.Color.SteelBlue;
+            chartArea2.Name = "ChartArea1";
+            this.chFL.ChartAreas.Add(chartArea2);
+            legend2.BackColor = System.Drawing.Color.SteelBlue;
+            legend2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend2.Name = "Legend1";
+            this.chFL.Legends.Add(legend2);
             this.chFL.Location = new System.Drawing.Point(92, 654);
             this.chFL.Name = "chFL";
             this.chFL.Size = new System.Drawing.Size(1086, 229);
             this.chFL.TabIndex = 19;
             this.chFL.Text = "chart4";
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Calibri", 22.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.ForeColor = System.Drawing.Color.White;
-            this.label3.Location = new System.Drawing.Point(1, 72);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(105, 46);
-            this.label3.TabIndex = 20;
-            this.label3.Text = "Steps";
             // 
             // label6
             // 
@@ -344,24 +316,78 @@
             this.lblScrollLeft.Text = "<";
             this.lblScrollLeft.Click += new System.EventHandler(this.lblLeft_Click);
             // 
+            // cbTopLeft
+            // 
+            this.cbTopLeft.AutoSize = true;
+            this.cbTopLeft.Checked = true;
+            this.cbTopLeft.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbTopLeft.Location = new System.Drawing.Point(132, 294);
+            this.cbTopLeft.Name = "cbTopLeft";
+            this.cbTopLeft.Size = new System.Drawing.Size(78, 21);
+            this.cbTopLeft.TabIndex = 29;
+            this.cbTopLeft.Text = "Top left";
+            this.cbTopLeft.UseVisualStyleBackColor = true;
+            this.cbTopLeft.CheckedChanged += new System.EventHandler(this.cbTopLeft_CheckedChanged);
+            // 
+            // cbTopRight
+            // 
+            this.cbTopRight.AutoSize = true;
+            this.cbTopRight.Checked = true;
+            this.cbTopRight.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbTopRight.Location = new System.Drawing.Point(250, 294);
+            this.cbTopRight.Name = "cbTopRight";
+            this.cbTopRight.Size = new System.Drawing.Size(87, 21);
+            this.cbTopRight.TabIndex = 30;
+            this.cbTopRight.Text = "Top right";
+            this.cbTopRight.UseVisualStyleBackColor = true;
+            this.cbTopRight.CheckedChanged += new System.EventHandler(this.cbTopRight_CheckedChanged);
+            // 
+            // cbRearLeft
+            // 
+            this.cbRearLeft.AutoSize = true;
+            this.cbRearLeft.Checked = true;
+            this.cbRearLeft.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbRearLeft.Location = new System.Drawing.Point(132, 321);
+            this.cbRearLeft.Name = "cbRearLeft";
+            this.cbRearLeft.Size = new System.Drawing.Size(84, 21);
+            this.cbRearLeft.TabIndex = 31;
+            this.cbRearLeft.Text = "Rear left";
+            this.cbRearLeft.UseVisualStyleBackColor = true;
+            this.cbRearLeft.CheckedChanged += new System.EventHandler(this.cbRearLeft_CheckedChanged);
+            // 
+            // cbRearRight
+            // 
+            this.cbRearRight.AutoSize = true;
+            this.cbRearRight.Checked = true;
+            this.cbRearRight.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbRearRight.Location = new System.Drawing.Point(250, 321);
+            this.cbRearRight.Name = "cbRearRight";
+            this.cbRearRight.Size = new System.Drawing.Size(93, 21);
+            this.cbRearRight.TabIndex = 32;
+            this.cbRearRight.Text = "Rear right";
+            this.cbRearRight.UseVisualStyleBackColor = true;
+            this.cbRearRight.CheckedChanged += new System.EventHandler(this.cbRearRight_CheckedChanged);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.SteelBlue;
             this.ClientSize = new System.Drawing.Size(1924, 969);
+            this.Controls.Add(this.cbRearRight);
+            this.Controls.Add(this.cbRearLeft);
+            this.Controls.Add(this.cbTopRight);
+            this.Controls.Add(this.cbTopLeft);
             this.Controls.Add(this.lblScrollLeft);
             this.Controls.Add(this.lblScrollRight);
             this.Controls.Add(this.txtScale);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.chFL);
             this.Controls.Add(this.chFR);
             this.Controls.Add(this.pbNoConnect);
             this.Controls.Add(this.btnLoadFile);
-            this.Controls.Add(this.chSteps);
             this.Controls.Add(this.btnIdle);
             this.Controls.Add(this.btnMeasure);
             this.Controls.Add(this.btnDisconnect);
@@ -380,7 +406,6 @@
             this.pnCloseConsole.PerformLayout();
             this.pnOpenConsole.ResumeLayout(false);
             this.pnOpenConsole.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chSteps)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbNoConnect)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chFR)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chFL)).EndInit();
@@ -400,18 +425,20 @@
         private System.Windows.Forms.Button btnDisconnect;
         private System.Windows.Forms.Button btnMeasure;
         private System.Windows.Forms.Button btnIdle;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chSteps;
         private System.Windows.Forms.Button btnLoadFile;
         private System.Windows.Forms.PictureBox pbNoConnect;
         private System.Windows.Forms.DataVisualization.Charting.Chart chFR;
         private System.Windows.Forms.DataVisualization.Charting.Chart chFL;
-        private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.TextBox txtScale;
         private System.Windows.Forms.Label lblScrollRight;
         private System.Windows.Forms.Label lblScrollLeft;
+        private System.Windows.Forms.CheckBox cbTopLeft;
+        private System.Windows.Forms.CheckBox cbTopRight;
+        private System.Windows.Forms.CheckBox cbRearLeft;
+        private System.Windows.Forms.CheckBox cbRearRight;
     }
 }
 
