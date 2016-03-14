@@ -13,9 +13,12 @@ namespace VetSoft
     {
         private List<Hoof> _hoofSet;
         private List<ForcePoint> _stepSequence;
-        private List<ForcePointStream> _finalList;
+        private List<Sensor> _finalList;
+        private List<ForcePoint> _stepStream;
 
-        public List<ForcePointStream> FINALLIST { get { return _finalList; } }
+
+        public List<Sensor> FINALLIST { get { return _finalList; } }
+        public List<ForcePoint> StepStream { get { return _stepStream; } }
              
 
         public Equine(List<Hoof> hoofSet)
@@ -30,12 +33,17 @@ namespace VetSoft
         /// </summary>
         public void process()
         {
+            List<Sensor> finalList = new List<Sensor>();
             Hoof hoof = _hoofSet.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT));
-            ForcePointAnalyser fpAnalyser = new ForcePointAnalyser();
-            List<ForcePointStream> finalList = new List<ForcePointStream>();
+
+            _finalList = hoof.SensorList;
+
+            hoof.calcSteps();
+                        
+            //Console.WriteLine("Steps: " + hoof.Steps);
 
             
-            _finalList = hoof.ForcePointStreams;
+            _stepStream = hoof.StepStream;
         }       
     }
 }

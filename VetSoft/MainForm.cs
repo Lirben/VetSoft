@@ -26,6 +26,7 @@ namespace VetSoft
         private bool _console;
 
         //Variables
+        private double _scale;
         private string _fileName;
         private Serial _serialReader;
         private DataLogger _dataLogger;
@@ -62,29 +63,6 @@ namespace VetSoft
             _console = true;
 
             //GUI setup
-            txtScale.Text = 0.ToString();
-        }
-
-        private void pnCloseConsole_MouseClick(object sender, MouseEventArgs e)
-        {
-            this.Width -= lsConsole.Width;
-
-            lsConsole.Visible = false;
-            pnCloseConsole.Visible = false;
-            pnOpenConsole.Visible = true;
-
-            _console = false;
-        }
-
-        private void pnOpenConsole_MouseClick(object sender, MouseEventArgs e)
-        {
-            this.Width += lsConsole.Width;
-
-            lsConsole.Visible = true;
-            pnCloseConsole.Visible = true;
-            pnOpenConsole.Visible = false;
-
-            _console = true;
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
@@ -100,6 +78,7 @@ namespace VetSoft
                 btnConnect.Visible = false;
                 btnDisconnect.Visible = true;
                 btnMeasure.Visible = true;
+                btnMeasure.Enabled = true;
                 btnSave.Enabled = false;
             }
             else
@@ -109,8 +88,8 @@ namespace VetSoft
 
                 pbNoConnect.Visible = true;
                 btnConnect.Visible = true;
+                btnMeasure.Enabled = false;
                 btnDisconnect.Visible = false;
-                btnMeasure.Visible = false;
                 btnSave.Enabled = false;
             }            
         }
@@ -127,7 +106,7 @@ namespace VetSoft
 
                 btnConnect.Visible = true;
                 btnDisconnect.Visible = false;
-                btnMeasure.Visible = false;
+                btnMeasure.Enabled = false;
                 btnSave.Enabled = false;
             }
         }
@@ -182,32 +161,54 @@ namespace VetSoft
             {
                 clearGraphs();
 
-                /*foreach (Hoof hoof in _hoofList)
+                foreach (Hoof hoof in _hoofList)
                 {
                     hoof.setPresent(false);
-                    hoof.ForcePointStreams.Clear();
-                }*/
+                    hoof.Clear();
+                }
 
                 loadFile(selectedValue.Split('●')[1].TrimStart(' '));
             }
 
             renderCharts();
+           
+        }
 
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            foreach (Hoof hoof in _hoofList)
+                foreach (Sample sample in hoof.SampleList)
+                    _dataLogger.WriteSample(sample, hoof.HoofLocation);
 
-            ///TODO:REFACTOR
+            _dataLogger.SaveToFile(Types.RandomString(6) + ".xml");
+        }
 
+        private void btnAnalyse_Click(object sender, EventArgs e)
+        {
             _equine = new Equine(_hoofList);
             _equine.process();
 
-            List<ForcePointStream> output = _equine.FINALLIST;
+            List<Sensor> output = _equine.FINALLIST;
 
-            foreach (ForcePointStream fpStream in output)
+
+            MethodInvoker graphAction;
+
+            graphAction = delegate
+            {
+                foreach (ForcePoint forcePoint in _equine.StepStream)
+                    chFR.Series["GeneralStep"].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
+            };
+
+            chFR.BeginInvoke(graphAction);
+            
+
+            foreach (Sensor fpStream in output)
             {
                 string series = "";
-                MethodInvoker graphAction;
+                //MethodInvoker graphAction;
 
-                writeLine(fpStream.HoofLocation + "." + fpStream.SensorLocation + ": " + fpStream.Steps);
-                              
+                writeLine(fpStream.HoofLocation + "." + fpStream.SensorLocation + ": " + fpStream.Steps.Count);
+
                 switch (fpStream.SensorLocation)
                 {
                     case Types.SensorLocation.REAR_LEFT:
@@ -229,7 +230,7 @@ namespace VetSoft
 
                 graphAction = delegate
                 {
-                    foreach(ForcePoint forcePoint in fpStream.StepStream)
+                    foreach (ForcePoint forcePoint in fpStream.StepStream)
                         chFR.Series[series].Points.AddXY(forcePoint.TimeStamp, forcePoint.ForceValue);
                 };
 
@@ -237,32 +238,7 @@ namespace VetSoft
             }
         }
 
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            foreach (Hoof hoof in _hoofList)
-                foreach (Sample sample in hoof.SampleList)
-                    _dataLogger.WriteSample(sample, hoof.HoofLocation);
-
-            _dataLogger.SaveToFile(Types.RandomString(6) + ".xml");
-        }
-
-        private void txtScale_TextChanged(object sender, EventArgs e)
-        {
-            double interval;
-
-            double.TryParse(txtScale.Text, out interval);
-
-            chFR.ChartAreas[0].AxisX.Maximum = chFR.ChartAreas[0].AxisX.Minimum + (interval * 1000);
-            chFL.ChartAreas[0].AxisX.Maximum = chFL.ChartAreas[0].AxisX.Minimum + (interval * 1000);
-            //chSteps.ChartAreas[0].AxisX.Maximum = chSteps.ChartAreas[0].AxisX.Minimum + (interval * 1000);
-
-            chFR.Update();
-            chFL.Update();
-            //chSteps.Update();
-
-        }
-
-        private void lblLeft_Click(object sender, EventArgs e)
+        private void pnScrollLeft_MouseClick(object sender, MouseEventArgs e)
         {
             if (chFR.ChartAreas[0].AxisX.Minimum > 999)
             {
@@ -270,28 +246,99 @@ namespace VetSoft
                 chFR.ChartAreas[0].AxisX.Maximum -= 1000;
                 chFL.ChartAreas[0].AxisX.Minimum -= 1000;
                 chFL.ChartAreas[0].AxisX.Maximum -= 1000;
-                /*chSteps.ChartAreas[0].AxisX.Minimum -= 1000;
-                chSteps.ChartAreas[0].AxisX.Maximum -= 1000;*/
                 chFR.Update();
                 chFL.Update();
-                //chSteps.Update();
             }
         }
 
-        private void lblRight_Click(object sender, EventArgs e)
-        {
-            
-            chFR.ChartAreas[0].AxisX.Minimum += 1000;
-            chFR.ChartAreas[0].AxisX.Maximum += 1000;
-            chFL.ChartAreas[0].AxisX.Minimum += 1000;
-            chFL.ChartAreas[0].AxisX.Maximum += 1000;
-            /*chSteps.ChartAreas[0].AxisX.Minimum += 1000;
-            chSteps.ChartAreas[0].AxisX.Maximum += 1000;*/
 
+        private void pnScrollRight_MouseClick(object sender, MouseEventArgs e)
+        {
+            chFR.ChartAreas[0].AxisX.Minimum += 3000;
+            chFR.ChartAreas[0].AxisX.Maximum += 3000;
+            chFL.ChartAreas[0].AxisX.Minimum += 3000;
+            chFL.ChartAreas[0].AxisX.Maximum += 3000;
+            
             chFL.ChartAreas[0].AxisY.Maximum = double.NaN;
             chFR.Update();
             chFL.Update();
-            //chSteps.Update();
+        }
+
+        private void btnZoomIn_Click(object sender, EventArgs e)
+        {
+            _scale = 0.8 * (chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum);
+            updateScale();
+
+            writeLine("Scale: " + _scale);
+        }
+
+        private void btnZoomOut_Click(object sender, EventArgs e)
+        {
+            _scale = 1.2 * (chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum);
+            updateScale();
+
+            writeLine("Scale: " + _scale);
+        }
+
+        private void cbTopLeft_CheckedChanged(object sender, EventArgs e)
+        {
+
+            chFR.Series["TopLeft"].Color = Color.Transparent;
+            chFR.Series["TopLeftStep"].Color = Color.Transparent;
+
+            if (cbTopLeft.Checked)
+            {
+                chFR.Series["TopLeft"].Color = Color.LightSteelBlue;
+                chFR.Series["TopLeftStep"].Color = Color.BlueViolet;
+            }
+        }
+
+        private void cbRearLeft_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["RearLeft"].Color = Color.Transparent;
+            chFR.Series["RearLeftStep"].Color = Color.Transparent;
+
+            if (cbRearLeft.Checked)
+            {
+                chFR.Series["RearLeft"].Color = Color.Orange;
+                chFR.Series["RearLeftStep"].Color = Color.OrangeRed;
+            }
+        }
+
+        private void cbTopRight_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["TopRight"].Color = Color.Transparent;
+            chFR.Series["TopRightStep"].Color = Color.Transparent;
+
+            if (cbTopRight.Checked)
+            {
+                chFR.Series["TopRight"].Color = Color.White;
+                chFR.Series["TopRightStep"].Color = Color.NavajoWhite;
+            }
+        }
+
+        private void cbRearRight_CheckedChanged(object sender, EventArgs e)
+        {
+            chFR.Series["RearRight"].Color = Color.Transparent;
+            chFR.Series["RearRightStep"].Color = Color.Transparent;
+
+            if (cbRearRight.Checked)
+            {
+                chFR.Series["RearRight"].Color = Color.Gray;
+                chFR.Series["RearRightStep"].Color = Color.GreenYellow;
+            }
+        }
+
+        /// <summary>
+        /// Update the scale of the graphs in the GUI
+        /// </summary>
+        private void updateScale()
+        {
+            chFR.ChartAreas[0].AxisX.Maximum = chFR.ChartAreas[0].AxisX.Minimum + _scale;
+            chFL.ChartAreas[0].AxisX.Maximum = chFL.ChartAreas[0].AxisX.Minimum + _scale;
+
+            chFR.Update();
+            chFL.Update();
         }
 
         /// <summary>
@@ -352,7 +399,6 @@ namespace VetSoft
         private void renderCharts()
         {
             MethodInvoker graphAction;
-            MethodInvoker scaleAction;
 
             foreach (Hoof hoof in _hoofList.Where(x => x.Present))
                 foreach (Sample sample in hoof.SampleList)
@@ -362,10 +408,10 @@ namespace VetSoft
                         case Types.HoofLocation.FRONT_LEFT:
                             graphAction = delegate
                             {
-                                /*chFL.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
+                                chFL.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
                                 chFL.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
                                 chFL.Series["RearLeft"].Points.AddXY(sample.Time, sample.Data[0]);
-                                chFL.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);*/
+                                chFL.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);
                             };
 
                             chFL.BeginInvoke(graphAction);
@@ -384,14 +430,9 @@ namespace VetSoft
                             break;
                     }
                 }
-            
-            scaleAction = delegate
-            {
-                chFR.Update();
-                txtScale.Text = ((chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum) / 1000).ToString();
-            };
 
-            txtScale.BeginInvoke(scaleAction);            
+            chFR.Update();
+            _scale = chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum;     
         }
 
         /// <summary>
@@ -439,6 +480,10 @@ namespace VetSoft
             return false;
         }
 
+        /// <summary>
+        /// Load a XmlFile from the hard drive and store the data in a hoof object
+        /// </summary>
+        /// <param name="file">The name off the xml file</param>
         private void loadFile(string file)
         {
             XmlDocument xmlDoc = new XmlDocument();
@@ -472,6 +517,9 @@ namespace VetSoft
             }          
         }
 
+        /// <summary>
+        /// Clear all the graphs in the GUI from data
+        /// </summary>
         private void clearGraphs()
         {
             for (int i = 0; i < chFR.Series.Count; i++)
@@ -479,11 +527,12 @@ namespace VetSoft
 
             for (int i = 0; i < chFL.Series.Count; i++)
                 chFL.Series[i].Points.Clear();
-
-            /*for (int i = 0; i < chSteps.Series.Count; i++)
-                chSteps.Series[i].Points.Clear();*/
         }
 
+        /// <summary>
+        /// Write a line in the console window in the GUI
+        /// </summary>
+        /// <param name="line">The line to write to the console</param>
         private void writeLine(string line)
         {
             MethodInvoker consoleAction = delegate { lsConsole.Items.Insert(0, line); };
@@ -504,6 +553,8 @@ namespace VetSoft
             chFR.Series.Add("RearRight");
             chFR.Series.Add("RearRightStep");
 
+            chFR.Series.Add("GeneralStep");
+
             for (int i = 0; i < chFR.Series.Count; i++)
             {
                 chFR.Series[i].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
@@ -522,6 +573,8 @@ namespace VetSoft
             chFR.Series["RearRight"].Color = Color.Gray;
             chFR.Series["RearRightStep"].Color = Color.YellowGreen;
 
+            chFR.Series["GeneralStep"].Color = Color.DarkSlateGray;
+
             chFR.ChartAreas[0].AxisX.LineColor = Color.White;
             chFR.ChartAreas[0].AxisY.LineColor = Color.White;
             chFR.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.Transparent;
@@ -538,7 +591,6 @@ namespace VetSoft
             chFL.Series.Add("RearRight");
 
             chFL.Series.Add("Steps");
-            //chSteps.Series.Add("Filter");
 
             chFL.Series["TopLeft"].Color = Color.LightSteelBlue;
             chFL.Series["TopRight"].Color = Color.White;
@@ -546,7 +598,6 @@ namespace VetSoft
             chFL.Series["RearRight"].Color = Color.Gray;
 
             chFL.Series["Steps"].Color = Color.White;
-            //chSteps.Series["Filter"].Color = Color.Azure;
 
             for (int i = 0; i < chFL.Series.Count; i++)
             {
@@ -555,8 +606,6 @@ namespace VetSoft
             }
 
             chFL.Series["Steps"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
-            /*chSteps.Series["Filter"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
-            chSteps.Series["Filter"].BorderWidth = 4;*/
 
             chFL.ChartAreas[0].AxisX.LineColor = Color.White;
             chFL.ChartAreas[0].AxisY.LineColor = Color.White;
@@ -566,55 +615,6 @@ namespace VetSoft
             chFL.ChartAreas[0].AxisY.MinorGrid.LineColor = Color.Transparent;
             chFL.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
             chFL.ChartAreas[0].AxisY.LabelStyle.ForeColor = Color.White;
-        }
-
-        private void cbTopLeft_CheckedChanged(object sender, EventArgs e)
-        {
-
-            chFR.Series["TopLeft"].Color = Color.Transparent;
-            chFR.Series["TopLeftStep"].Color = Color.Transparent;
-
-            if (cbTopLeft.Checked)
-            {
-                chFR.Series["TopLeft"].Color = Color.LightSteelBlue;
-                chFR.Series["TopLeftStep"].Color = Color.BlueViolet;
-            }
-        }
-
-        private void cbRearLeft_CheckedChanged(object sender, EventArgs e)
-        {
-            chFR.Series["RearLeft"].Color = Color.Transparent;
-            chFR.Series["RearLeftStep"].Color = Color.Transparent;
-
-            if (cbRearLeft.Checked)
-            {
-                chFR.Series["RearLeft"].Color = Color.Orange;
-                chFR.Series["RearLeftStep"].Color = Color.OrangeRed;
-            }
-        }
-
-        private void cbTopRight_CheckedChanged(object sender, EventArgs e)
-        {
-            chFR.Series["TopRight"].Color = Color.Transparent;
-            chFR.Series["TopRightStep"].Color = Color.Transparent;
-
-            if (cbTopRight.Checked)
-            {
-                chFR.Series["TopRight"].Color = Color.White;
-                chFR.Series["TopRightStep"].Color = Color.NavajoWhite;
-            }
-        }
-
-        private void cbRearRight_CheckedChanged(object sender, EventArgs e)
-        {
-            chFR.Series["RearRight"].Color = Color.Transparent;
-            chFR.Series["RearRightStep"].Color = Color.Transparent;
-
-            if (cbRearRight.Checked)
-            {
-                chFR.Series["RearRight"].Color = Color.Gray;
-                chFR.Series["RearRightStep"].Color = Color.GreenYellow;
-            }
         }
     }
 }

@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace VetSoft
 {
-    class ForcePointStream
+    class Sensor
     {
-        private int _steps;
         private ForcePointAnalyser _fpAnalyser;
         private Types.StreamType _streamType;
         private Types.HoofLocation _hoofLocation;
         private Types.SensorLocation _sensorLocation;
         private List<ForcePoint> _rawStream;
         private List<ForcePoint> _stepStream;
+        private List<Step> _stepList;
 
 
-        public int Steps { get { return ReturnSteps(); } }
+        public List<Step> Steps { get { return ReturnSteps(); } }
         public Types.StreamType StreamType { get { return _streamType; } }
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
         public Types.SensorLocation SensorLocation { get { return _sensorLocation; } }
@@ -30,12 +30,12 @@ namespace VetSoft
         /// </summary>
         /// <param name="hoofLocation">The hoof whereto the stream belongs</param>
         /// <param name="sensorLocation">The sensor on the hoof whereto the stream belongs</param>
-        public ForcePointStream(Types.HoofLocation hoofLocation, Types.SensorLocation sensorLocation, Types.StreamType streamType = Types.StreamType.RAW)
-        {
-            _steps = -1;
+        public Sensor(Types.HoofLocation hoofLocation, Types.SensorLocation sensorLocation, Types.StreamType streamType = Types.StreamType.RAW)
+        {            
             _streamType = streamType;
             _hoofLocation = hoofLocation;
             _sensorLocation = sensorLocation;
+            _stepList = new List<Step>();
             _rawStream = new List<ForcePoint>();  
             _stepStream = new List<ForcePoint>();
         }
@@ -45,17 +45,24 @@ namespace VetSoft
         /// Add a ForcePoint to the raw stream
         /// </summary>
         /// <param name="forcePoint">The ForcePoint that will be added to the stream</param>
-        public void addForcePoint(ForcePoint forcePoint)
+        public void AddForcePoint(ForcePoint forcePoint)
         {
             _rawStream.Add(forcePoint);
         }
 
-        private int ReturnSteps()
+        public void Clear()
         {
-            if (_steps.Equals(-1))
+            _stepList = new List<Step>();
+            _rawStream = new List<ForcePoint>();
+            _stepStream = new List<ForcePoint>();
+        }
+
+        private List<Step> ReturnSteps()
+        {
+            if (_stepList.Count.Equals(0))
                 CalculateSteps();
 
-            return _steps;
+            return _stepList;
         }
 
         private List<ForcePoint> ReturnStepStream()
@@ -78,9 +85,10 @@ namespace VetSoft
         /// <returns>The amount of steps</returns>
         private void CalculateSteps()
         {
-            _steps = 0;
+            int stepNumber = 0;
             ForcePoint previousPoint;
-
+            List<ForcePoint> _rawSteps = new List<ForcePoint>();
+            
             if(_stepStream.Count.Equals(0))
                 CalculateStepStream();
 
@@ -89,7 +97,14 @@ namespace VetSoft
             foreach (ForcePoint forcePoint in _stepStream)
             {
                 if (forcePoint.ForceValue > previousPoint.ForceValue)
-                    _steps++;
+                    _rawSteps = new List<ForcePoint>();
+
+                if (forcePoint.ForceValue > 0)
+                    _rawSteps.Add(_rawStream.Find(x => x.TimeStamp.Equals(forcePoint.TimeStamp)));
+
+
+                if (forcePoint.ForceValue < previousPoint.ForceValue)
+                    _stepList.Add(new Step(_rawSteps, _hoofLocation, _sensorLocation, ++stepNumber));
 
                 previousPoint = forcePoint;
             }

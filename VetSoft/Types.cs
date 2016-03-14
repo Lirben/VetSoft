@@ -14,7 +14,7 @@ namespace VetSoft
 
         public enum StreamType { RAW, FILTERED, STEP };
         public enum HoofLocation { FRONT_LEFT, FRONT_RIGHT, HIND_LEFT, HIND_RIGHT};
-        public enum SensorLocation { TOP_LEFT, TOP_RIGHT, REAR_LEFT, REAR_RIGHT };
+        public enum SensorLocation { REAR_LEFT, TOP_LEFT, REAR_RIGHT, TOP_RIGHT };
         
         public static string RandomString(int length)
         {
