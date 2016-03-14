@@ -190,6 +190,8 @@ namespace VetSoft
 
             List<Sensor> output = _equine.FINALLIST;
 
+            writeLine(_equine.NumberOfSteps + " steps analysed");
+
 
             MethodInvoker graphAction;
 

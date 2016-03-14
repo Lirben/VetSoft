@@ -11,18 +11,20 @@ namespace VetSoft
 {
     class Equine
     {
+        private int _nrOfSteps;
         private List<Hoof> _hoofSet;
         private List<ForcePoint> _stepSequence;
         private List<Sensor> _finalList;
         private List<ForcePoint> _stepStream;
 
-
+        public int NumberOfSteps { get { return _nrOfSteps; } }
         public List<Sensor> FINALLIST { get { return _finalList; } }
         public List<ForcePoint> StepStream { get { return _stepStream; } }
              
 
         public Equine(List<Hoof> hoofSet)
         {
+            _nrOfSteps = -1;
             _hoofSet = hoofSet;
             _stepSequence = new List<ForcePoint>();
         }
@@ -38,11 +40,11 @@ namespace VetSoft
 
             _finalList = hoof.SensorList;
 
-            hoof.calcSteps();
+            hoof.RoughStepCalculation();
                         
             //Console.WriteLine("Steps: " + hoof.Steps);
 
-            
+            _nrOfSteps = hoof.Steps;
             _stepStream = hoof.StepStream;
         }       
     }

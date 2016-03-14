@@ -83,7 +83,7 @@ namespace VetSoft
         private int GetSteps()
         {
             if (_steps.Equals(-1))
-                CalculateSteps();
+                RoughStepCalculation();
 
             return _steps;
         }
@@ -91,25 +91,30 @@ namespace VetSoft
         /// <summary>
         /// Version 2 of rough step calculation
         /// </summary>
-        public void calcSteps()
+        public void RoughStepCalculation()
         {
+            int updateStepSet = -1;
             //Generate the list of all the steps that belong together
             List<List<Step>> stepSetArray = GenerateStepSet(_sensorList);
 
             for (int currentStep = 0; currentStep < stepSetArray.Count; currentStep++)
             {
+                
                 uint minStartTime = stepSetArray[currentStep].Min(x => x.StartTime);
                 uint maxStartTime = stepSetArray[currentStep].Max(x => x.StartTime);
                 uint minStopTime = stepSetArray[currentStep].Min(x => x.StopTime);
                 uint maxStopTime = stepSetArray[currentStep].Max(x => x.StopTime);
 
-                //If one of the steps is a step that belongs to a step in the past
-                if (_stepListHoof.Count > 0)
-                    if (minStartTime < _stepListHoof[_stepListHoof.Count - 1].StopTime)
+                //If one of the steps is in the time frame of the previous step
+                //If a new step has been created because of a step that's in the time frame of the previous step => do not execute this part
+                if (_stepListHoof.Count > 0 && updateStepSet.Equals(currentStep - 1))               
+                    while (minStartTime < _stepListHoof[_stepListHoof.Count - 1].StopTime)
                     {
-                        Step stepToRemove = stepSetArray[currentStep].Find(x => x.StartTime.Equals(minStartTime));
-                        removeStep(stepToRemove, stepSetArray);
+                        updateStepSet = currentStep;
+                        Step stepToShift = stepSetArray[currentStep].Find(x => x.StartTime.Equals(minStartTime));
+                        shiftStep(stepToShift, stepSetArray);
 
+                        minStartTime = stepSetArray[currentStep].Min(x => x.StartTime);
                         maxStartTime = stepSetArray[currentStep].Max(x => x.StartTime);
                         minStopTime = stepSetArray[currentStep].Min(x => x.StopTime);
                     }
@@ -124,24 +129,32 @@ namespace VetSoft
                     minStopTime = stepSetArray[currentStep].Min(x => x.StopTime);
                 }
 
-                if (stepSetArray[currentStep].Count > 0)
+                //Create a step for this hoof from the sensorsteps
+                //Don't trust a step that's only detected by 1 sensor
+                if (stepSetArray[currentStep].Count > 1)
                 {
                     //Calculate necesserry parameters
                     int stepNr = stepSetArray[currentStep].Min(x => x.StepNumber);
 
                     minStartTime = stepSetArray[currentStep].Min(x => x.StartTime);
-                    maxStopTime = stepSetArray[currentStep].Max(x => x.StopTime);
-                    
-                    
+                    maxStopTime = stepSetArray[currentStep].Max(x => x.StopTime);                  
 
                     //Add new general step to the hoof's steplist
                     _stepListHoof.Add(new Step(minStartTime, maxStopTime, _hoofLocation, stepNr));
-                }
+                }               
             }
+
+            _steps = _stepListHoof.Count;
 
             generateStepStream();
         }
 
+        /// <summary>
+        /// Shift a step in a stepList array. Use this function to align steps from sensors with each other,
+        /// so every column in the array holds steps that are part of the same hoof step
+        /// </summary>
+        /// <param name="stepToShift">The step that will be shifted further in the future</param>
+        /// <param name="stepListArray">The array that contains the step that must be shifted</param>
         private void shiftStep(Step stepToShift, List<List<Step>> stepListArray)
         {
             List<Step> stepList = stepListArray.Find(x => x.Exists(y => y.Equals(stepToShift)));
@@ -149,12 +162,21 @@ namespace VetSoft
             int stepIndex = stepListArray.FindIndex(x => x.Equals(stepList));
             int sensorIndex = stepList.FindIndex(x => x.SensorLocation.Equals(stepToShift.SensorLocation));
 
-            for(int index = stepIndex; index < stepListArray.Count; index++)
+            for(int index = stepIndex; (index < stepListArray.Count); index++)
             {
                 if (stepHolder != null)
                 {
                     stepHolder.StepNumber++;
                     stepListArray[index].Remove(stepHolder);
+
+                    if (stepHolder.StopTime < stepListArray[index + 1].Min(x => x.StartTime))
+                    {
+                        stepListArray.Insert((index + 1), new List<Step>());
+
+                        for (int i = (index + 1); i < stepListArray.Count; i++)
+                            foreach (Step step in stepListArray[i])
+                                step.StepNumber++;
+                    }
 
                     if ((index + 1).Equals(stepListArray.Count))
                         stepListArray.Add(new List<Step>());
@@ -165,30 +187,6 @@ namespace VetSoft
                     stepListArray[index + 1].Insert(sensorIndex, stepHolder);
                     stepHolder = stepListArray[index + 1].Find(x => (x.SensorLocation.Equals(stepToShift.SensorLocation)) && (!x.StartTime.Equals(stepHolder.StartTime)));
                 }
-            }
-        }
-
-        private void removeStep(Step stepToRemove, List<List<Step>> stepListArray)
-        {
-            List<Step> stepList = stepListArray.Find(x => x.Exists(y => y.Equals(stepToRemove)));
-            int stepIndex = stepListArray.FindIndex(x => x.Equals(stepList));
-            int sensorIndex = stepList.FindIndex(x => x.SensorLocation.Equals(stepToRemove.SensorLocation));
-
-            stepList.Remove(stepToRemove);
-
-            for (int index = stepIndex; index < (stepListArray.Count - 1); index++)
-            {
-                int nextStepSensorIndex = stepListArray[index + 1].FindIndex(x => x.SensorLocation.Equals(stepToRemove.SensorLocation));
-
-                if (!nextStepSensorIndex.Equals(-1))
-                {
-                    stepListArray[index].Insert(sensorIndex, stepListArray[index + 1][nextStepSensorIndex]);
-                    stepListArray[index + 1].RemoveAt(nextStepSensorIndex);
-                    stepListArray[index][sensorIndex].StepNumber--;                    
-                }
-
-                if (stepListArray[index + 1].Count.Equals(0))
-                    stepListArray.RemoveAt(index + 1);
             }
         }
 
@@ -220,104 +218,9 @@ namespace VetSoft
             return retVal;
         }
 
-        private void CheckStep(List<Step> stepSet)
-        {
-            int stepNr = stepSet.Min(x => x.StepNumber);
-            uint minStartTime = stepSet.Min(x => x.StartTime);
-            uint maxStartTime = stepSet.Max(x => x.StartTime);
-            uint minStopTime = stepSet.Min(x => x.StopTime);
-            uint maxStopTime = stepSet.Max(x => x.StopTime);
-
-            //If one of the steps is a step that is further away in the future
-            if (maxStartTime > minStopTime)
-            { }
-
-            //If one of the steps is a step that belongs to a step in the past
-            if (_stepListHoof.Count > 0)
-                if (minStartTime < _stepListHoof[_stepListHoof.Count - 1].StopTime)
-                {
-                    stepSet.RemoveAll(x => x.StartTime.Equals(minStartTime));
-                }
-
-            _stepListHoof.Add(new Step(minStartTime, maxStopTime, _hoofLocation, stepNr));
-
-        }
-
-        public void CalculateSteps()
-        {
-            List<List<Step>> stepListSensors = new List<List<Step>>(_sensorList.Count);
-
-            for (int i = 0; i < _sensorList.Count; i++)
-                stepListSensors.Add(_sensorList[i].Steps);
-
-            int maxSteps = stepListSensors.Max(x => x.Max(y => y.StepNumber));
-
-            for (int curStep = 1; curStep < maxSteps; curStep++)
-            {
-                List<Step> currentStep = new List<Step>();
-                maxSteps = stepListSensors.Max(x => x.Max(y => y.StepNumber));
-
-                foreach (List<Step> stepList in stepListSensors)
-                {
-                    Step dummy = stepList.Find(x => x.StepNumber.Equals(curStep));
-
-                    if (dummy != null)
-                        currentStep.Add(dummy);
-                }
-
-                double avgStopTime = double.PositiveInfinity;
-
-                if (currentStep.Count > 0)
-                    avgStopTime = currentStep.Average(x => x.StopTime);
-
-                for (int i = 0; i < currentStep.Count; i++)
-                {
-                    //If some steps are outside of the other steps => create a new step on that line
-                    if (currentStep[i].StartTime > avgStopTime)
-                    {
-                        List<Step> update = stepListSensors.Find(x => x.Exists(y => y.Equals(currentStep[i])));
-
-                        currentStep.RemoveAt(i);
-                        for (int j = curStep; j < update.Count; j++)
-                            update[j].StepNumber++;
-                    }
-
-                    //If multiple steps are detected inside other steps => remove steps from that line
-                    if (_stepListHoof.Count > 0 && i < currentStep.Count)
-                        if (currentStep[i].StartTime < _stepListHoof[_stepListHoof.Count - 1].StopTime)
-                        {
-                            List<Step> update = stepListSensors.Find(x => x.Exists(y => y.Equals(currentStep[i])));
-
-                            currentStep.RemoveAt(i);
-                            update.RemoveAll(x => x.StepNumber.Equals(curStep));
-
-                            for (int j = curStep; j < update.Count; j++)
-                                update[j].StepNumber--;
-                        }
-                }
-
-                createNewStep(currentStep);
-            }
-
-            _steps = _stepListHoof.Count;
-
-            generateStepStream();
-        }
-
-        private void createNewStep(List<Step> stepList)
-        {
-            if (stepList.Count > 0)
-            {
-                int stepNr = stepList.Min(x => x.StepNumber);
-                uint startTime = stepList.Min(x => x.StartTime);
-                uint stopTime = stepList.Max(x => x.StopTime);
-
-                _stepListHoof.Add(new Step(startTime, stopTime, _hoofLocation, stepNr));
-            }
-        }
-
-
-
+        /// <summary>
+        /// Create the stepstream with forcepoints from a regular step stream
+        /// </summary>
         private void generateStepStream()
         {
             for (uint i = _sampleList[0].Time; i <= _sampleList[_sampleList.Count - 1].Time; i += 50)
