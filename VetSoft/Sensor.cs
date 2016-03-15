@@ -9,7 +9,6 @@ namespace VetSoft
     class Sensor
     {
         private ForcePointAnalyser _fpAnalyser;
-        private Types.StreamType _streamType;
         private Types.HoofLocation _hoofLocation;
         private Types.SensorLocation _sensorLocation;
         private List<ForcePoint> _rawStream;
@@ -18,7 +17,6 @@ namespace VetSoft
 
 
         public List<Step> Steps { get { return ReturnSteps(); } }
-        public Types.StreamType StreamType { get { return _streamType; } }
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
         public Types.SensorLocation SensorLocation { get { return _sensorLocation; } }
         public List<ForcePoint> RawStream { get { return _rawStream; } }
@@ -30,9 +28,8 @@ namespace VetSoft
         /// </summary>
         /// <param name="hoofLocation">The hoof whereto the stream belongs</param>
         /// <param name="sensorLocation">The sensor on the hoof whereto the stream belongs</param>
-        public Sensor(Types.HoofLocation hoofLocation, Types.SensorLocation sensorLocation, Types.StreamType streamType = Types.StreamType.RAW)
+        public Sensor(Types.HoofLocation hoofLocation, Types.SensorLocation sensorLocation)
         {            
-            _streamType = streamType;
             _hoofLocation = hoofLocation;
             _sensorLocation = sensorLocation;
             _stepList = new List<Step>();

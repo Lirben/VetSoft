@@ -40,7 +40,7 @@ namespace VetSoft
 
             _finalList = hoof.SensorList;
 
-            hoof.RoughStepCalculation();
+            hoof.Analyse();
                         
             //Console.WriteLine("Steps: " + hoof.Steps);
 

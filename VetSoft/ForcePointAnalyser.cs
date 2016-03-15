@@ -30,7 +30,7 @@ namespace VetSoft
         /// <returns>The filtered ForcePoint stream</returns>
         private Sensor BinFilter(Sensor forcePointStream, double treshold)
         {
-            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.FILTERED);
+            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation);
 
             foreach (ForcePoint value in forcePointStream.RawStream)
                 if (Math.Abs(value.ForceValue) <= treshold)
@@ -49,7 +49,7 @@ namespace VetSoft
         private Sensor LPFilter(Sensor forcePointStream, int alpha)
         {
             int median = (int)Math.Floor((double) alpha / 2);
-            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.FILTERED);
+            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation);
 
             for (int i = (alpha - median); i < (forcePointStream.RawStream.Count - (alpha - median)); i++)
                 retVal.AddForcePoint(new ForcePoint(forcePointStream.RawStream[i].TimeStamp, forcePointStream.RawStream.GetRange((i - (alpha - median)), alpha).Average(x => x.ForceValue)));
@@ -64,7 +64,7 @@ namespace VetSoft
         /// <returns>The differentiated list of ForcePoints</returns>
         private Sensor Differential(Sensor forcePointStream)
         {
-            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.FILTERED);
+            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation);
             ForcePoint previousPoint = forcePointStream.RawStream[0];
 
             foreach (ForcePoint forcePoint in forcePointStream.RawStream)
@@ -90,7 +90,7 @@ namespace VetSoft
         {
             double stepVal = 500;
             double lastVal = 0;
-            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation, Types.StreamType.STEP);
+            Sensor retVal = new Sensor(forcePointStream.HoofLocation, forcePointStream.SensorLocation);
 
             for(int i = 0; i < (forcePointStream.RawStream.Count - 1); i++)
             {

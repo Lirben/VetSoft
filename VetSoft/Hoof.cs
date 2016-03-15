@@ -9,7 +9,7 @@ namespace VetSoft
 {
     class Hoof
     {
-        public int Steps { get { return GetSteps(); } }
+        public int Steps { get { return _steps; } }
         public bool Present { get { return _present; } }
         public List<Sample> SampleList { get { return _sampleList; } }
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
@@ -68,8 +68,8 @@ namespace VetSoft
         {
             if (Present)
             {
-                foreach (Sensor fpStream in _sensorList)
-                    fpStream.AddForcePoint(new ForcePoint(sample.Time, sample.Data[(int)fpStream.SensorLocation]));
+                foreach (Sensor sensor in _sensorList)
+                    sensor.AddForcePoint(new ForcePoint(sample.Time, sample.Data[(int)sensor.SensorLocation]));
 
                 _sampleList.Add(sample);
 
@@ -79,19 +79,16 @@ namespace VetSoft
             return false;
         }
 
-
-        private int GetSteps()
+        public void Analyse()
         {
-            if (_steps.Equals(-1))
-                RoughStepCalculation();
-
-            return _steps;
+            RoughStepCalculation();
         }
 
+
         /// <summary>
-        /// Version 2 of rough step calculation
+        /// Merge the rough step calculation of the sensors into a step calculation for the hoof
         /// </summary>
-        public void RoughStepCalculation()
+        private void RoughStepCalculation()
         {
             int updateStepSet = -1;
             //Generate the list of all the steps that belong together

@@ -190,7 +190,7 @@ namespace VetSoft
 
             List<Sensor> output = _equine.FINALLIST;
 
-            writeLine(_equine.NumberOfSteps + " steps analysed");
+            writeLine(_equine.FINALLIST[0].HoofLocation + ": " + _equine.NumberOfSteps + " steps analysed");
 
 
             MethodInvoker graphAction;
@@ -208,8 +208,6 @@ namespace VetSoft
             {
                 string series = "";
                 //MethodInvoker graphAction;
-
-                writeLine(fpStream.HoofLocation + "." + fpStream.SensorLocation + ": " + fpStream.Steps.Count);
 
                 switch (fpStream.SensorLocation)
                 {
@@ -270,16 +268,12 @@ namespace VetSoft
         {
             _scale = 0.8 * (chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum);
             updateScale();
-
-            writeLine("Scale: " + _scale);
         }
 
         private void btnZoomOut_Click(object sender, EventArgs e)
         {
             _scale = 1.2 * (chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum);
             updateScale();
-
-            writeLine("Scale: " + _scale);
         }
 
         private void cbTopLeft_CheckedChanged(object sender, EventArgs e)
