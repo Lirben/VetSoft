@@ -1,14 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
-
+///TODO: clean up RoughStepCalculation()
 namespace VetSoft
 {
+    /// <summary>
+    /// A representation of a hoof of a horse
+    /// </summary>
     class Hoof
     {
+
         public int Steps { get { return _steps; } }
         public bool Present { get { return _present; } }
         public List<Sample> SampleList { get { return _sampleList; } }
@@ -28,7 +31,7 @@ namespace VetSoft
         /// <summary>
         /// Constructor of the hoof class
         /// </summary>
-        /// <param name="name">The name of the hoof</param>
+        /// <param name="hoofLocation">The location of the hoof on the horse</param>
         public Hoof(Types.HoofLocation hoofLocation)
         {
             _hoofLocation = hoofLocation;
@@ -36,7 +39,16 @@ namespace VetSoft
         }
 
         /// <summary>
-        /// Set the hoof to present in the system
+        /// Perform analysis on this hoof
+        /// </summary>
+        public void Analyse()
+        {
+            if(_stepStream.Count.Equals(0))
+                RoughStepCalculation();
+        }
+
+        /// <summary>
+        /// Set the hoof to present on the horse
         /// </summary>
         public void setPresent(bool present = true)
         {
@@ -79,11 +91,8 @@ namespace VetSoft
             return false;
         }
 
-        public void Analyse()
-        {
-            RoughStepCalculation();
-        }
 
+        /***************************** PRIVATE ZONE *****************************/
 
         /// <summary>
         /// Merge the rough step calculation of the sensors into a step calculation for the hoof
@@ -91,6 +100,11 @@ namespace VetSoft
         private void RoughStepCalculation()
         {
             int updateStepSet = -1;
+
+            //Perform analysis on each sensor
+            foreach (Sensor sensor in _sensorList)
+                sensor.Analyse();
+
             //Generate the list of all the steps that belong together
             List<List<Step>> stepSetArray = GenerateStepSet(_sensorList);
 
@@ -194,7 +208,7 @@ namespace VetSoft
         /// <returns>The 2 dimensional list of steps</returns>
         private List<List<Step>> GenerateStepSet(List<Sensor> sensorList)
         {
-            int maxSteps = _sensorList.Max(x => x.Steps.Count);
+            int maxSteps = _sensorList.Max(x => x.StepList.Count);
             List<List<Step>> retVal = new List<List<Step>>();
 
             for (int currentStep = 1; currentStep <= maxSteps; currentStep++)
@@ -203,7 +217,7 @@ namespace VetSoft
 
                 foreach (Sensor sensor in _sensorList)
                 {
-                    Step step = sensor.Steps.Find(x => x.StepNumber.Equals(currentStep));
+                    Step step = sensor.StepList.Find(x => x.StepNumber.Equals(currentStep));
 
                     if (step != null)
                         sameStep.Add(step);

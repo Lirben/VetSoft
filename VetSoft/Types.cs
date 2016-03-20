@@ -2,12 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 using System.Threading.Tasks;
 
 namespace VetSoft
 {
     public static class Types
     {
+        public const byte XBEE_TRANSMIT_STATUS = 0x89;
+        public const byte XBEE_RECIEVE_PACKET_16BIT = 0x81;
+
+
         public const int COMMAND_PACKAGE_TYPE = 0;
         public const int RESPONSE_PACKAGE_TYPE = 1;
         public const int DATA_PACKAGE_TYPE = 2;
@@ -26,6 +31,7 @@ namespace VetSoft
         public struct CommandPackage
         {
             public int type { get; set; }
+            public Types.HoofLocation hoofLocation { get; set; }
             public string command { get; set; }
             public string parameter { get; set; }
             public string value { get; set; }
@@ -33,17 +39,25 @@ namespace VetSoft
 
         public struct ResponsePackage
         {
+            [JsonProperty("type")]
             public int type { get; set; }
-            public string hoof { get; set; }
+            [JsonProperty("hoof")]
+            public Types.HoofLocation hoofLocation { get; set; }
+            [JsonProperty("parameter")]
             public string parameter { get; set; }
+            [JsonProperty("value")]
             public string value { get; set; }
         }
 
         public struct DataPackage
         {
+            [JsonProperty("type")]
             public int type { get; set; }
-            public string hoof { get; set; }
+            [JsonProperty("hoof")]
+            public Types.HoofLocation hoofLocation { get; set; }
+            [JsonProperty("time")]
             public uint time { get; set; }
+            [JsonProperty("data")]
             public string[] data { get; set; }
         }
     }

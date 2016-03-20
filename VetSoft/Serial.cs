@@ -13,15 +13,15 @@ namespace VetSoft
         private SerialPort _serialPort;
         private string _lastError;
 
-        public delegate void serialEvent(string data);
+        public delegate void serialEvent(Frame frame);
         public event serialEvent dataRecieved;
 
         public string LastError { get { return _lastError; } }
 
-        protected virtual void onDataRecieved(string data)
+        protected virtual void onDataRecieved(Frame frame)
         {
             if (dataRecieved != null)
-                dataRecieved(data);
+                dataRecieved(frame);
         }
 
         public Serial()
@@ -65,30 +65,68 @@ namespace VetSoft
         {
             bool retVal = true;
 
+            _serialPort.DiscardInBuffer();
+            _serialPort.DiscardOutBuffer();
             _serialPort.Close();
             _serialPort.Dispose();
 
             return retVal;
         }
 
-        public string readNext()
+        public void send(XbeeFrame frame)
         {
-            if (_serialPort.IsOpen)
-                if (_serialPort.BytesToRead > 0)
-                    return _serialPort.ReadLine();
-
-            return string.Empty;
+            byte[] byFrame = frame.RawFrame;
+            _serialPort.Write(byFrame,0,byFrame.Length);
         }
 
-        public void send(string payload)
+        private byte ReadNextByte(SerialPort port)
         {
-            _serialPort.WriteLine(payload);
+            byte[] incByte = new byte[1];
+
+            port.Read(incByte, 0, 1);
+
+            switch(incByte[0])
+            {
+                case 0x7D:                  //Escape symbol (get next symbol and Xor with 0x20)
+                    port.Read(incByte, 0, 1);
+                    return (byte) (incByte[0] ^ 0x20);
+
+                default:
+                    return incByte[0];
+            }
         }
                 
         private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
         {
             SerialPort sp = (SerialPort)sender;
-            onDataRecieved(sp.ReadLine());
+            
+            while (sp.BytesToRead > 0)
+            {
+                byte delimiter;
+                byte[] frameLength = new byte[2];
+                Frame xbFrame = new Frame();
+
+                delimiter = ReadNextByte(sp);
+
+                if (delimiter.Equals(0x7E))
+                {
+                    frameLength[0] = ReadNextByte(sp);
+                    frameLength[1] = ReadNextByte(sp);
+
+                    xbFrame.addByte(delimiter);
+                    xbFrame.addByte(frameLength[0]);
+                    xbFrame.addByte(frameLength[1]);
+
+                    int length = Convert.ToInt32(frameLength[0]) + Convert.ToInt32(frameLength[1]);
+
+                    while (sp.BytesToRead < (length + 1)) ;       //Wait till complete packet is read.
+
+                    for (int i = 0; i < (length + 1); i++)
+                        xbFrame.addByte(ReadNextByte(sp));
+
+                    dataRecieved(xbFrame);
+                }
+            }
         }
 
         private void closeConnection()

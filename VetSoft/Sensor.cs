@@ -1,26 +1,40 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
+///TODO:
+///
 
 namespace VetSoft
 {
+    /// <summary>
+    /// Represents a force resistive sensor.
+    /// Holds a stream of force measurements and the timestamp when it was acquired
+    /// </summary>
     class Sensor
     {
-        private ForcePointAnalyser _fpAnalyser;
+        private Filters _signalFilter;
         private Types.HoofLocation _hoofLocation;
         private Types.SensorLocation _sensorLocation;
         private List<ForcePoint> _rawStream;
         private List<ForcePoint> _stepStream;
         private List<Step> _stepList;
 
+        /// <summary>Get a list of the steps that are detected on this sensor.</summary>
+        public List<Step> StepList { get { return _stepList; } }
 
-        public List<Step> Steps { get { return ReturnSteps(); } }
+        ///<summary>The hoof to which this sensor is attached </summary>
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
+
+        /// <summary>The location on a hoof where this sensor is placed </summary>
         public Types.SensorLocation SensorLocation { get { return _sensorLocation; } }
+
+        /// <summary>The stream of acquired forcepoints by this sensor</summary>
         public List<ForcePoint> RawStream { get { return _rawStream; } }
-        public List<ForcePoint> StepStream { get { return ReturnStepStream(); } }
+
+        /// <summary>A representation of the steplist by digital forcePoints</summary>
+        public List<ForcePoint> StepStream { get { return _stepStream; } }
 
 
         /// <summary>
@@ -39,7 +53,7 @@ namespace VetSoft
         
 
         /// <summary>
-        /// Add a ForcePoint to the raw stream
+        /// Add a ForcePoint to the raw sensor stream
         /// </summary>
         /// <param name="forcePoint">The ForcePoint that will be added to the stream</param>
         public void AddForcePoint(ForcePoint forcePoint)
@@ -47,6 +61,18 @@ namespace VetSoft
             _rawStream.Add(forcePoint);
         }
 
+        /// <summary>
+        /// Searches the raw stream for steps
+        /// </summary>
+        public void Analyse()
+        {
+            CalculateStepStream();
+            CalculateSteps();
+        }
+
+        /// <summary>
+        /// Clear this sensor from the acquisition history
+        /// </summary>
         public void Clear()
         {
             _stepList = new List<Step>();
@@ -54,26 +80,15 @@ namespace VetSoft
             _stepStream = new List<ForcePoint>();
         }
 
-        private List<Step> ReturnSteps()
-        {
-            if (_stepList.Count.Equals(0))
-                CalculateSteps();
 
-            return _stepList;
-        }
-
-        private List<ForcePoint> ReturnStepStream()
-        {
-            if (_stepStream.Count.Equals(0))
-                CalculateStepStream();
-
-            return _stepStream;
-        }
-
+        /***************************** PRIVATE ZONE *****************************/
+        /// <summary>
+        /// Calculates the forcepoint stream representation of the steps 
+        /// </summary>
         private void CalculateStepStream()
         {
-            _fpAnalyser = new ForcePointAnalyser();
-            _stepStream = _fpAnalyser.StepSequence(this).RawStream;
+            _signalFilter = new Filters();
+            _stepStream = _signalFilter.CalculateStepSequence(this);
         }
 
         /// <summary>

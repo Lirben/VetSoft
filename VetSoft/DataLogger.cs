@@ -33,7 +33,7 @@ namespace VetSoft
             XmlElement Data3El = _xmlDoc.CreateElement("TopRight");
 
             timeEl.InnerText = sample.Time.ToString();
-            hoofEl.InnerText = hoof.ToString();
+            hoofEl.InnerText = ((int) hoof).ToString();
             Data0El.InnerText = sample.Data[0].ToString();
             Data1El.InnerText = sample.Data[1].ToString();
             Data2El.InnerText = sample.Data[2].ToString();
