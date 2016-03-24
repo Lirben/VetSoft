@@ -12,6 +12,7 @@ namespace VetSoft
     class Hoof
     {
 
+        public int Address { get { return _address; } }
         public int Steps { get { return _steps; } }
         public bool Present { get { return _present; } }
         public List<Sample> SampleList { get { return _sampleList; } }
@@ -19,6 +20,7 @@ namespace VetSoft
         public List<Sensor> SensorList { get { return _sensorList; } }
         public List<ForcePoint> StepStream { get { return _stepStream; } }
 
+        private int _address;
         private int _steps;
         private bool _present;
         private Types.HoofLocation _hoofLocation;
@@ -32,8 +34,9 @@ namespace VetSoft
         /// Constructor of the hoof class
         /// </summary>
         /// <param name="hoofLocation">The location of the hoof on the horse</param>
-        public Hoof(Types.HoofLocation hoofLocation)
+        public Hoof(Types.HoofLocation hoofLocation, int address)
         {
+            _address = address;
             _hoofLocation = hoofLocation;
             this.Clear();
         }
@@ -78,17 +81,12 @@ namespace VetSoft
         /// <returns>Returns false if the hoof is not present. True if everything is ok</returns>
         public bool addSample(Sample sample)
         {
-            if (Present)
-            {
-                foreach (Sensor sensor in _sensorList)
-                    sensor.AddForcePoint(new ForcePoint(sample.Time, sample.Data[(int)sensor.SensorLocation]));
+            foreach (Sensor sensor in _sensorList)
+                sensor.AddForcePoint(new ForcePoint(sample.Time, sample.Data[(int)sensor.SensorLocation]));
 
-                _sampleList.Add(sample);
+            _sampleList.Add(sample);
 
-                return true;
-            }
-
-            return false;
+            return true;            
         }
 
 

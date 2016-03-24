@@ -9,8 +9,9 @@ namespace VetSoft
 {
     public static class Types
     {
-        public const byte XBEE_TRANSMIT_STATUS = 0x89;
-        public const byte XBEE_RECIEVE_PACKET_16BIT = 0x81;
+        public const byte TxFRAME_16BIT = 0x01;
+        public const byte RxFRAME_16BIT = 0x81;
+        public const byte STATUS_FRAME = 0x89;
 
 
         public const int COMMAND_PACKAGE_TYPE = 0;
@@ -49,16 +50,20 @@ namespace VetSoft
             public string value { get; set; }
         }
 
+        public struct DataContent
+        {
+            [JsonProperty("t")]
+            public uint time { get; set; }
+            [JsonPropertyAttribute("f")]
+            public double[] forcePoint { get; set; }
+        }
+
         public struct DataPackage
         {
             [JsonProperty("type")]
             public int type { get; set; }
-            [JsonProperty("hoof")]
-            public Types.HoofLocation hoofLocation { get; set; }
-            [JsonProperty("time")]
-            public uint time { get; set; }
-            [JsonProperty("data")]
-            public string[] data { get; set; }
+            [JsonProperty("sample")]
+            public DataContent[] data { get; set; }
         }
     }
 }

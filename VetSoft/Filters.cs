@@ -29,6 +29,8 @@ namespace VetSoft
 
 
         /***************************** PRIVATE ZONE *****************************/
+
+
         /// <summary>
         /// Filter the ForcePoint stream based on a treshold. If a force value is smaller than the threshold it's set to 0
         /// </summary>
