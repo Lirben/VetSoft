@@ -27,6 +27,7 @@ namespace VetSoft
         private bool _console;
 
         //Variables
+        private int _renderCounter;
         private double _scale;
         private string _fileName;
 
@@ -52,15 +53,12 @@ namespace VetSoft
 
             //Hoofs setup
             _hoofList = new List<Hoof>(4);
-            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_LEFT));
-            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_RIGHT));
-            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_LEFT));
-            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_RIGHT));
 
             //Charts setup
             setupCharts();          
                      
             //Flags setup
+            _renderCounter = 0;
             _answer = -1;
             _console = true;
         }
@@ -117,11 +115,11 @@ namespace VetSoft
 
         private void btnMeasure_Click(object sender, EventArgs e)
         {
-            //foreach(Hoof hoof in _hoofList.Where(x => x.Present))
-            {
-                XbeeFrame packet = new XbeeFrame(1, "{\"type\":0, \"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\", \"value\":\"true\"}");
-                _serialReader.send(packet);
-                //Thread.Sleep(125);
+            foreach(Hoof hoof in _hoofList)
+            {                
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"true\"}", 0x00);
+                _serialReader.send(frame);
+                Thread.Sleep(50);                
             }
             
             btnDisconnect.Enabled = false;
@@ -132,14 +130,15 @@ namespace VetSoft
 
         private void btnIdle_Click(object sender, EventArgs e)
         {
-            //foreach (Hoof hoof in _hoofList.Where(x => x.Present))
+            foreach (Hoof hoof in _hoofList)
             {
                 _answer = -1;
+                
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}", 0x00);
+                _serialReader.send(frame);
 
-                XbeeFrame packet = new XbeeFrame(1, "{\"type\": 0,\"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}");
-                _serialReader.send(packet);                
-
-                Thread.Sleep(200);
+                Thread.Sleep(50);
+                
             }
 
             btnDisconnect.Enabled = true;
@@ -359,12 +358,12 @@ namespace VetSoft
         {
             if (_serialReader.connect(comPort, baudRate))
             {
-                for (int i = 0; i < 1; i++)
+                for (int i = 0; i < 4; i++)
                 {
-                    XbeeFrame packet = new XbeeFrame(1, "{\"type\":0,\"hoof\":0,\"command\":\"read\",\"parameter\":status}");
-                    _serialReader.send(packet);
+                    TxFrame frame = new TxFrame(i,"{\"type\":0,\"command\":\"read\",\"parameter\":status}", 0x00);
+                    _serialReader.send(frame);
 
-                    Thread.Sleep(125);
+                    Thread.Sleep(50);
                 }
 
                 return true;
@@ -380,12 +379,25 @@ namespace VetSoft
         {
             switch(frame.FrameType)
             {
-                case Types.XBEE_TRANSMIT_STATUS:
-                    writeLine("Status ok");
+                case Types.STATUS_FRAME:
+                    //writeLine("Status ok");
                     break;
 
-                case Types.XBEE_RECIEVE_PACKET_16BIT:
-                    writeLine(frame.Message);
+                case Types.RxFRAME_16BIT:
+                    RxFrame rxFrame = (RxFrame) frame.GetFrame();
+                    JObject objJson = JObject.Parse(rxFrame.Message);
+                    int addressSender = Convert.ToInt32(rxFrame.Address[0]) + Convert.ToInt32(rxFrame.Address[1]);
+
+                    switch ((int) objJson.GetValue("type"))
+                    {
+                        case Types.RESPONSE_PACKAGE_TYPE:
+                            processResponsePacket(rxFrame.Message, addressSender);
+                            break;
+
+                        case Types.DATA_PACKAGE_TYPE:
+                            processDataPacket(rxFrame.Message, addressSender);
+                            break;
+                    }
                     break;
 
                 default:
@@ -393,60 +405,39 @@ namespace VetSoft
                     break;
             }
 
-
-            /*JObject objJson = JObject.Parse(data);
-
-            switch ((int) objJson.GetValue("type"))
-            {
-                case Types.RESPONSE_PACKAGE_TYPE:
-                    processResponsePacket(data);
-                    break;
-
-                case Types.DATA_PACKAGE_TYPE:
-                    processDataPacket(data);
-                    break;
-            }*/
         }
 
         /// <summary>
         /// Assigns the data packet to the correct hoof in memory.
         /// </summary>
         /// <param name="data">The json description of the data packet</param>
-        private void processDataPacket(string data)
+        private void processDataPacket(string data, int address)
         {
             Types.DataPackage dataPackage = JsonConvert.DeserializeObject<Types.DataPackage>(data);
-            _hoofList.Find(x => x.HoofLocation.Equals(dataPackage.hoofLocation)).addSample(new Sample(dataPackage.time, dataPackage.data));
+            Hoof hoof = _hoofList.Find(x => x.Address.Equals(address));
 
-            updateCharts(dataPackage.hoofLocation, new Sample(dataPackage.time, dataPackage.data));
-            renderCharts();
+            foreach(Types.DataContent dataContent in dataPackage.data)
+            {
+                hoof.addSample(new Sample(dataContent.time, dataContent.forcePoint));                
+                updateCharts(hoof.HoofLocation, new Sample(dataContent.time, dataContent.forcePoint));
+            }
 
-            if (_console)
-                writeLine(data);           
+            renderChart(getChart(hoof.HoofLocation));
+            
+
+            //if (_console)
+            //    writeLine(data);           
         }
 
         private void renderHoofList()
         {
             foreach (Hoof hoof in _hoofList.Where(x => x.Present))
+            {
                 foreach (Sample sample in hoof.SampleList)
                     updateCharts(hoof.HoofLocation, sample);
 
-            renderCharts();
-        }
-
-        /// <summary>
-        /// Render the charts
-        /// </summary>
-        private void renderCharts()
-        {
-            MethodInvoker graphAction = delegate
-            {
-                chFR.Update();
-                chFL.Update();
-                _scale = chFR.ChartAreas["ChartArea1"].AxisX.Maximum - chFR.ChartAreas["ChartArea1"].AxisX.Minimum;
-            };
-
-            chFR.BeginInvoke(graphAction);
-            chFL.BeginInvoke(graphAction);
+                renderChart(getChart(hoof.HoofLocation));
+            }            
         }
 
         /// <summary>
@@ -468,17 +459,31 @@ namespace VetSoft
         }
 
         /// <summary>
+        /// Render the charts
+        /// </summary>
+        private void renderChart(Chart chartPlaceHolder)
+        {
+            MethodInvoker graphAction = delegate
+            {
+                chartPlaceHolder.Update();
+                _scale = chartPlaceHolder.ChartAreas["ChartArea1"].AxisX.Maximum - chartPlaceHolder.ChartAreas["ChartArea1"].AxisX.Minimum;
+            };
+
+            chartPlaceHolder.BeginInvoke(graphAction);
+        }
+
+        /// <summary>
         /// Deal with a response from the hoofs
         /// </summary>
-        /// <param name="data">The json description of the response packat</param>
-        private void processResponsePacket(string data)
+        /// <param name="data">The json description of the response packet</param>
+        private void processResponsePacket(string data, int address)
         {
             Types.ResponsePackage answer = JsonConvert.DeserializeObject<Types.ResponsePackage>(data);
 
             switch (answer.parameter)
             {
                 case "status":
-                    hoofDetection(answer.hoofLocation);
+                    hoofDetection(answer.hoofLocation, address);
                     break;
             }
             
@@ -493,23 +498,14 @@ namespace VetSoft
         /// </summary>
         /// <param name="hoofName">The name of the hoof</param>
         /// <returns>True if the hoof is properly detected, false if there's a problem</returns>
-        private bool hoofDetection(Types.HoofLocation hooflocation)
-        {            
-            Hoof hoof;
-            int activeHoofs;
+        private bool hoofDetection(Types.HoofLocation hooflocation, int address)
+        {
+            Hoof hoof = new Hoof(hooflocation, address);
 
-            hoof = _hoofList.Find(x => x.HoofLocation.Equals(hooflocation));
+            _hoofList.Add(hoof);
 
-            if (!hoof.Present)
-            {
-                hoof.setPresent();
-                activeHoofs = _hoofList.Count(x => x.Present);
-                writeLine(hooflocation + " detected [" + activeHoofs + "/" + _hoofList.Count + "]");
-                return true;
-            }
-
-            writeLine("ERROR: " + hooflocation + " already detected!");
-            return false;
+            writeLine(hooflocation + " detected [" + _hoofList.Count + "/" + _hoofList.Count + "]");
+            return true;
         }
 
         /// <summary>
@@ -518,6 +514,11 @@ namespace VetSoft
         /// <param name="file">The name off the xml file</param>
         private void loadFile(string file)
         {
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_LEFT, 0));
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_RIGHT, 0));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_LEFT, 0));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_RIGHT, 0));
+
             XmlDocument xmlDoc = new XmlDocument();
 
             xmlDoc.Load("../../../DataLogs/" + file);
