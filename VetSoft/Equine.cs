@@ -26,9 +26,7 @@ namespace VetSoft
         /// </summary>
         public void process()
         {
-            List<Hoof> presentHoofs = _hoofSet.FindAll(x => x.Present);
-
-            foreach (Hoof hoof in presentHoofs)            
+            foreach (Hoof hoof in _hoofSet.FindAll(x => !x.Address.Equals(-1)))            
                 hoof.Analyse();            
         }       
     }

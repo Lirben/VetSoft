@@ -56,6 +56,7 @@
             this.pnScrollLeft = new System.Windows.Forms.Panel();
             this.btnZoomIn = new System.Windows.Forms.Button();
             this.btnZoomOut = new System.Windows.Forms.Button();
+            this.txtFileName = new System.Windows.Forms.TextBox();
             this.pnScrollRight.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbNoConnect)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chFR)).BeginInit();
@@ -391,12 +392,23 @@
             this.btnZoomOut.UseVisualStyleBackColor = true;
             this.btnZoomOut.Click += new System.EventHandler(this.btnZoomOut_Click);
             // 
+            // txtFileName
+            // 
+            this.txtFileName.Location = new System.Drawing.Point(1332, 946);
+            this.txtFileName.Name = "txtFileName";
+            this.txtFileName.Size = new System.Drawing.Size(146, 22);
+            this.txtFileName.TabIndex = 36;
+            this.txtFileName.Text = "Filename";
+            this.txtFileName.Visible = false;
+            this.txtFileName.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtFileName_KeyDown);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.SteelBlue;
-            this.ClientSize = new System.Drawing.Size(1924, 987);
+            this.ClientSize = new System.Drawing.Size(1914, 987);
+            this.Controls.Add(this.txtFileName);
             this.Controls.Add(this.btnZoomOut);
             this.Controls.Add(this.btnZoomIn);
             this.Controls.Add(this.btnAnalyse);
@@ -462,6 +474,7 @@
         private System.Windows.Forms.Panel pnScrollLeft;
         private System.Windows.Forms.Button btnZoomIn;
         private System.Windows.Forms.Button btnZoomOut;
+        private System.Windows.Forms.TextBox txtFileName;
     }
 }
 

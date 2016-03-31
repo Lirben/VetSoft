@@ -12,9 +12,8 @@ namespace VetSoft
     class Hoof
     {
 
-        public int Address { get { return _address; } }
+        public int Address { get { return _address; } set { _address = value; } }
         public int Steps { get { return _steps; } }
-        public bool Present { get { return _present; } }
         public List<Sample> SampleList { get { return _sampleList; } }
         public Types.HoofLocation HoofLocation { get { return _hoofLocation; } }
         public List<Sensor> SensorList { get { return _sensorList; } }
@@ -33,7 +32,8 @@ namespace VetSoft
         /// <summary>
         /// Constructor of the hoof class
         /// </summary>
-        /// <param name="hoofLocation">The location of the hoof on the horse</param>
+        /// <param name=
+        /// Location">The location of the hoof on the horse</param>
         public Hoof(Types.HoofLocation hoofLocation, int address)
         {
             _address = address;

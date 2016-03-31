@@ -41,6 +41,11 @@ namespace VetSoft
             _lastError = string.Empty;
         }
 
+        public void Flush()
+        {
+            _serialPort.DiscardInBuffer();
+        }
+
         /// <summary>
         /// Connect to a serial port
         /// </summary>
@@ -101,7 +106,7 @@ namespace VetSoft
         public void send(Frame frame)
         {
             byte[] byFrame = frame.FrameContent.ToArray();
-            _serialPort.Write(byFrame,0,byFrame.Length);
+            _serialPort.Write(byFrame, 0, byFrame.Length);
         }
 
         /***************************** PRIVATE ZONE *****************************/

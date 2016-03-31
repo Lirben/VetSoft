@@ -23,11 +23,12 @@ namespace VetSoft
         private readonly int BAUDRATE = 57600;
 
         //Flags
+        private bool _firstSampleFL;
+        private bool _firstSampleFR;
         private int _answer;
         private bool _console;
 
         //Variables
-        private int _renderCounter;
         private double _scale;
         private string _fileName;
 
@@ -53,12 +54,17 @@ namespace VetSoft
 
             //Hoofs setup
             _hoofList = new List<Hoof>(4);
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_LEFT, -1));
+            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_RIGHT, -1));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_LEFT, -1));
+            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_RIGHT, -1));
 
             //Charts setup
             setupCharts();          
                      
             //Flags setup
-            _renderCounter = 0;
+            _firstSampleFL = false;
+            _firstSampleFR = false;
             _answer = -1;
             _console = true;
         }
@@ -96,13 +102,23 @@ namespace VetSoft
 
         private void btnDisconnect_Click(object sender, EventArgs e)
         {
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
+            {
+                _answer = -1;
+
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}", 0x00);
+                _serialReader.send(frame);
+
+                Thread.Sleep(50);
+            }
+
             if (_serialReader.disconnect())
             {
                 if(_console)
                     lsConsole.Items.Add("Disconnected from " + COMPORT);
 
-                foreach (Hoof hoof in _hoofList.FindAll(x => x.Present))
-                    hoof.setPresent(false);
+                foreach (Hoof hoof in _hoofList)
+                    hoof.Address = -1;
 
                 btnAnalyse.Enabled = true;
                 btnLoadFile.Enabled = true;
@@ -115,9 +131,31 @@ namespace VetSoft
 
         private void btnMeasure_Click(object sender, EventArgs e)
         {
-            foreach(Hoof hoof in _hoofList)
+            //Clear charts & flush serial
+            _firstSampleFL = true;
+            _firstSampleFR = true;
+            _serialReader.Flush();
+            clearCharts();
+
+            //Clear hoof objects
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
+                hoof.Clear();
+            
+
+            //Synchronise clocks
+            int timeBase = 0;
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
+            {
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"command\":\"update\",\"parameter\":\"timeBase\",\"value\":" + timeBase + "}", 0x00);
+                _serialReader.send(frame);
+                Thread.Sleep(50);
+                timeBase += 50;
+            }
+            
+            //Start transmitting
+            foreach(Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
             {                
-                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"true\"}", 0x00);
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"true\"}", 0x00);
                 _serialReader.send(frame);
                 Thread.Sleep(50);                
             }
@@ -130,15 +168,14 @@ namespace VetSoft
 
         private void btnIdle_Click(object sender, EventArgs e)
         {
-            foreach (Hoof hoof in _hoofList)
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
             {
                 _answer = -1;
                 
-                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"hoof\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}", 0x00);
+                TxFrame frame = new TxFrame(hoof.Address, "{\"type\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}", 0x00);
                 _serialReader.send(frame);
 
-                Thread.Sleep(50);
-                
+                Thread.Sleep(50);                
             }
 
             btnDisconnect.Enabled = true;
@@ -160,7 +197,6 @@ namespace VetSoft
             writeLine("Choose a file from the list");
 
             btnSave.Enabled = false;
-
         }
 
         private void lsConsole_SelectedValueChanged(object sender, EventArgs e)
@@ -173,7 +209,7 @@ namespace VetSoft
 
                 foreach (Hoof hoof in _hoofList)
                 {
-                    hoof.setPresent(false);
+                    hoof.Address = -1;
                     hoof.Clear();
                 }
 
@@ -184,11 +220,8 @@ namespace VetSoft
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            foreach (Hoof hoof in _hoofList)
-                foreach (Sample sample in hoof.SampleList)
-                    _dataLogger.WriteSample(sample, hoof.HoofLocation);
-
-            _dataLogger.SaveToFile(Types.RandomString(6) + ".xml");
+            _dataLogger.Clear();
+            txtFileName.Visible = true;
         }
 
         /// <summary>
@@ -199,7 +232,7 @@ namespace VetSoft
             _equine = new Equine(_hoofList);
             _equine.process();
 
-            foreach(Hoof hoof in _hoofList)
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
             {
                 MethodInvoker graphAction;
                 Chart chartPlaceHolder = getChart(hoof.HoofLocation);
@@ -231,6 +264,20 @@ namespace VetSoft
                     
                     chartPlaceHolder.BeginInvoke(graphAction);
                 }
+            }
+        }
+
+        private void txtFileName_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
+                    foreach (Sample sample in hoof.SampleList)
+                        _dataLogger.WriteSample(sample, hoof.HoofLocation);
+
+                _dataLogger.SaveToFile(txtFileName.Text + ".xml");
+
+                txtFileName.Visible = false;
             }
         }
 
@@ -358,9 +405,9 @@ namespace VetSoft
         {
             if (_serialReader.connect(comPort, baudRate))
             {
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < _hoofList.Count; i++)
                 {
-                    TxFrame frame = new TxFrame(i,"{\"type\":0,\"command\":\"read\",\"parameter\":status}", 0x00);
+                    TxFrame frame = new TxFrame(i,"{\"type\":0,\"command\":\"read\",\"parameter\":\"location\"}", 0x00);
                     _serialReader.send(frame);
 
                     Thread.Sleep(50);
@@ -377,6 +424,7 @@ namespace VetSoft
         /// <param name="data">Data coming from the serial Line</param>
         private void recievedData(Frame frame)
         {
+
             switch(frame.FrameType)
             {
                 case Types.STATUS_FRAME:
@@ -416,22 +464,26 @@ namespace VetSoft
             Types.DataPackage dataPackage = JsonConvert.DeserializeObject<Types.DataPackage>(data);
             Hoof hoof = _hoofList.Find(x => x.Address.Equals(address));
 
-            foreach(Types.DataContent dataContent in dataPackage.data)
+            if (hoof != null)
             {
-                hoof.addSample(new Sample(dataContent.time, dataContent.forcePoint));                
-                updateCharts(hoof.HoofLocation, new Sample(dataContent.time, dataContent.forcePoint));
+                foreach (Types.DataContent dataContent in dataPackage.data)
+                {
+                    hoof.addSample(new Sample(dataContent.time, dataContent.forcePoint));
+                    updateCharts(hoof.HoofLocation, new Sample(dataContent.time, dataContent.forcePoint));
+                }
+
+                renderChart(getChart(hoof.HoofLocation));
             }
-
-            renderChart(getChart(hoof.HoofLocation));
-            
-
-            //if (_console)
-            //    writeLine(data);           
+            else
+            {
+                TxFrame frame = new TxFrame(address, "{\"type\":0,\"command\":\"update\",\"parameter\":\"transmitRaw\",\"value\":\"false\"}", 0x00);
+                _serialReader.send(frame);
+            }
         }
 
         private void renderHoofList()
         {
-            foreach (Hoof hoof in _hoofList.Where(x => x.Present))
+            foreach (Hoof hoof in _hoofList.FindAll(x => !x.Address.Equals(-1)))
             {
                 foreach (Sample sample in hoof.SampleList)
                     updateCharts(hoof.HoofLocation, sample);
@@ -444,18 +496,28 @@ namespace VetSoft
         /// Update the charts with a data sample.
         /// </summary>
         private void updateCharts(Types.HoofLocation hoofLocation, Sample sample)
-        {            
-            Chart chartPlaceHolder = getChart(hoofLocation);
-
-            MethodInvoker graphAction = delegate
+        {
+            if ((!_firstSampleFL && hoofLocation.Equals(Types.HoofLocation.FRONT_LEFT))
+                || (!_firstSampleFR && hoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)))
             {
-                chartPlaceHolder.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
-                chartPlaceHolder.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
-                chartPlaceHolder.Series["RearLeft"].Points.AddXY(sample.Time, sample.Data[0]);
-                chartPlaceHolder.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);
-            };
+                Chart chartPlaceHolder = getChart(hoofLocation);
 
-            chartPlaceHolder.BeginInvoke(graphAction);
+                MethodInvoker graphAction = delegate
+                {
+                    chartPlaceHolder.Series["TopLeft"].Points.AddXY(sample.Time, sample.Data[1]);
+                    chartPlaceHolder.Series["TopRight"].Points.AddXY(sample.Time, sample.Data[3]);
+                    chartPlaceHolder.Series["RearLeft"].Points.AddXY(sample.Time, sample.Data[0]);
+                    chartPlaceHolder.Series["RearRight"].Points.AddXY(sample.Time, sample.Data[2]);
+                };
+
+                chartPlaceHolder.BeginInvoke(graphAction);
+            }
+
+            if(hoofLocation.Equals(Types.HoofLocation.FRONT_LEFT))
+                _firstSampleFL = false;
+
+            if (hoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT))
+                _firstSampleFR = false;
         }
 
         /// <summary>
@@ -482,12 +544,12 @@ namespace VetSoft
 
             switch (answer.parameter)
             {
-                case "status":
-                    hoofDetection(answer.hoofLocation, address);
+                case "location":
+                    hoofDetection(((Types.HoofLocation) int.Parse(answer.value)), address);
                     break;
             }
             
-            _answer = (int) answer.hoofLocation;
+            _answer = address;
 
             if (_console)
                 writeLine(data);
@@ -502,7 +564,7 @@ namespace VetSoft
         {
             Hoof hoof = new Hoof(hooflocation, address);
 
-            _hoofList.Add(hoof);
+            _hoofList.Find(x => x.HoofLocation.Equals(hooflocation)).Address = address;
 
             writeLine(hooflocation + " detected [" + _hoofList.Count + "/" + _hoofList.Count + "]");
             return true;
@@ -514,11 +576,6 @@ namespace VetSoft
         /// <param name="file">The name off the xml file</param>
         private void loadFile(string file)
         {
-            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_LEFT, 0));
-            _hoofList.Add(new Hoof(Types.HoofLocation.FRONT_RIGHT, 0));
-            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_LEFT, 0));
-            _hoofList.Add(new Hoof(Types.HoofLocation.HIND_RIGHT, 0));
-
             XmlDocument xmlDoc = new XmlDocument();
 
             xmlDoc.Load("../../../DataLogs/" + file);
@@ -539,12 +596,12 @@ namespace VetSoft
 
                 if (xmlElement.SelectSingleNode("Hoof") != null)
                 {
-                    _hoofList.Find(x => x.HoofLocation.Equals((Types.HoofLocation) int.Parse(xmlElement.SelectSingleNode("Hoof").InnerXml))).setPresent();
+                    _hoofList.Find(x => x.HoofLocation.Equals((Types.HoofLocation)int.Parse(xmlElement.SelectSingleNode("Hoof").InnerXml))).Address = 0;
                     _hoofList.Find(x => x.HoofLocation.Equals((Types.HoofLocation) int.Parse(xmlElement.SelectSingleNode("Hoof").InnerXml))).addSample(new Sample(time, data));
                 }
                 else
                 {
-                    _hoofList.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)).setPresent();
+                    _hoofList.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)).Address = 0;
                     _hoofList.Find(x => x.HoofLocation.Equals(Types.HoofLocation.FRONT_RIGHT)).addSample(new Sample(time, data));
                 }                
             }          

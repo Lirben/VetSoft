@@ -42,8 +42,6 @@ namespace VetSoft
         {
             [JsonProperty("type")]
             public int type { get; set; }
-            [JsonProperty("hoof")]
-            public Types.HoofLocation hoofLocation { get; set; }
             [JsonProperty("parameter")]
             public string parameter { get; set; }
             [JsonProperty("value")]

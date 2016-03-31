@@ -22,6 +22,11 @@ namespace VetSoft
 
         }
 
+        public void Clear()
+        {
+            _xmlDoc.DocumentElement.RemoveAll();
+        }
+
         public void WriteSample(Sample sample, Types.HoofLocation hoof)
         {
             XmlElement sampleEl = _xmlDoc.CreateElement("Sample");
